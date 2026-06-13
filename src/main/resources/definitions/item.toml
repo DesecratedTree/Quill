@@ -1,0 +1,132 @@
+# Item definition opcodes
+# type: unsigned_byte, byte, unsigned_short, short, int, big_smart, smart, string, flag,
+#       offset_short, byte_times_5, 24bit_int,
+#       color_pairs, texture_pairs, byte_array, params, stack_variant,
+#       short_array, multi_field, skip
+#       634 is used as the base for item definitions, add fields for overrides. Examples below.
+[634]
+1 = { field = "modelId", type = "unsigned_short" }
+2 = { field = "name", type = "string" }
+4 = { field = "modelZoom", type = "unsigned_short" }
+5 = { field = "modelRotation1", type = "unsigned_short" }
+6 = { field = "modelRotation2", type = "unsigned_short" }
+7 = { field = "modelOffset1", type = "offset_short" }
+8 = { field = "modelOffset2", type = "offset_short" }
+11 = { field = "stackable", type = "flag" }
+12 = { field = "value", type = "int" }
+13 = { field = "equipSlot", type = "unsigned_byte" }
+14 = { field = "equipType", type = "unsigned_byte" }
+16 = { field = "membersOnly", type = "flag" }
+18 = { field = "", type = "skip_short" }
+23 = { field = "maleEquip1", type = "unsigned_short" }
+24 = { field = "maleEquip2", type = "unsigned_short" }
+25 = { field = "femaleEquip1", type = "unsigned_short" }
+26 = { field = "femaleEquip2", type = "unsigned_short" }
+27 = { field = "", type = "skip_byte" }
+30 = { field = "groundOptions", type = "string_array", index = 0 }
+31 = { field = "groundOptions", type = "string_array", index = 1 }
+32 = { field = "groundOptions", type = "string_array", index = 2 }
+33 = { field = "groundOptions", type = "string_array", index = 3 }
+34 = { field = "groundOptions", type = "string_array", index = 4 }
+35 = { field = "inventoryOptions", type = "string_array", index = 0 }
+36 = { field = "inventoryOptions", type = "string_array", index = 1 }
+37 = { field = "inventoryOptions", type = "string_array", index = 2 }
+38 = { field = "inventoryOptions", type = "string_array", index = 3 }
+39 = { field = "inventoryOptions", type = "string_array", index = 4 }
+40 = { field = "modelColors", type = "color_pairs" }
+41 = { field = "textureIds", type = "texture_pairs" }
+42 = { field = "unknownArray1", type = "byte_array" }
+44 = { field = "", type = "skip_complex_44" }
+45 = { field = "", type = "skip_complex_45" }
+65 = { field = "unnoted", type = "flag" }
+78 = { field = "maleEquipModelId3", type = "unsigned_short" }
+79 = { field = "femaleEquipModelId3", type = "unsigned_short" }
+90 = { field = "unknownInt1", type = "unsigned_short" }
+91 = { field = "unknownInt2", type = "unsigned_short" }
+92 = { field = "unknownInt3", type = "unsigned_short" }
+93 = { field = "unknownInt4", type = "unsigned_short" }
+95 = { field = "unknownInt5", type = "unsigned_short" }
+96 = { field = "unknownInt6", type = "unsigned_byte" }
+97 = { field = "certId", type = "unsigned_short" }
+98 = { field = "certTemplateId", type = "unsigned_short" }
+100 = { field = "stackIds", type = "stack_variant", index = 0 }
+101 = { field = "stackIds", type = "stack_variant", index = 1 }
+102 = { field = "stackIds", type = "stack_variant", index = 2 }
+103 = { field = "stackIds", type = "stack_variant", index = 3 }
+104 = { field = "stackIds", type = "stack_variant", index = 4 }
+105 = { field = "stackIds", type = "stack_variant", index = 5 }
+106 = { field = "stackIds", type = "stack_variant", index = 6 }
+107 = { field = "stackIds", type = "stack_variant", index = 7 }
+108 = { field = "stackIds", type = "stack_variant", index = 8 }
+109 = { field = "stackIds", type = "stack_variant", index = 9 }
+110 = { field = "unknownInt7", type = "unsigned_short" }
+111 = { field = "unknownInt8", type = "unsigned_short" }
+112 = { field = "unknownInt9", type = "unsigned_short" }
+113 = { field = "unknownInt10", type = "byte" }
+114 = { field = "unknownInt11", type = "byte_times_5" }
+115 = { field = "teamId", type = "unsigned_byte" }
+121 = { field = "lendId", type = "unsigned_short" }
+122 = { field = "lendTemplateId", type = "unsigned_short" }
+124 = { field = "", type = "skip_6_shorts" }
+125 = { field = "", type = "skip_3_bytes" }
+126 = { field = "", type = "skip_3_bytes" }
+127 = { field = "", type = "skip_byte_short" }
+128 = { field = "", type = "skip_byte_short" }
+129 = { field = "", type = "skip_byte_short" }
+130 = { field = "", type = "skip_byte_short" }
+132 = { field = "unknownArray2", type = "short_array" }
+134 = { field = "", type = "skip_byte" }
+139 = { field = "unknownValue2", type = "unsigned_short" }
+140 = { field = "unknownValue1", type = "unsigned_short" }
+142 = { field = "unknownArray4", type = "unsigned_short_array", index = 0 }
+143 = { field = "unknownArray4", type = "unsigned_short_array", index = 1 }
+144 = { field = "unknownArray4", type = "unsigned_short_array", index = 2 }
+145 = { field = "unknownArray4", type = "unsigned_short_array", index = 3 }
+146 = { field = "unknownArray4", type = "unsigned_short_array", index = 4 }
+147 = { field = "", type = "skip_short" }
+150 = { field = "unknownArray5", type = "unsigned_short_array", index = 0 }
+151 = { field = "unknownArray5", type = "unsigned_short_array", index = 1 }
+152 = { field = "unknownArray5", type = "unsigned_short_array", index = 2 }
+153 = { field = "unknownArray5", type = "unsigned_short_array", index = 3 }
+154 = { field = "unknownArray5", type = "unsigned_short_array", index = 4 }
+242 = { field = "", type = "old_model_pair" }
+243 = { field = "oldMaleEquip3", type = "big_smart" }
+244 = { field = "oldFemaleEquip3", type = "big_smart" }
+245 = { field = "oldMaleEquip2", type = "big_smart" }
+246 = { field = "oldFemaleEquip2", type = "big_smart" }
+247 = { field = "oldMaleEquip1", type = "big_smart" }
+248 = { field = "oldFemaleEquip1", type = "big_smart" }
+249 = { field = "itemParams", type = "params" }
+250 = { field = "oldEquipType", type = "unsigned_byte" }
+251 = { field = "", type = "old_recolor_pairs" }
+252 = { field = "", type = "old_retexture_pairs" }
+253 = { field = "", type = "old_rotation_offsets" }
+
+# Item definition opcodes - 667 revision overrides
+[667]
+1 = { field = "modelId", type = "big_smart" }
+23 = { field = "maleEquip1", type = "big_smart" }
+24 = { field = "maleEquip2", type = "big_smart" }
+25 = { field = "femaleEquip1", type = "big_smart" }
+26 = { field = "femaleEquip2", type = "big_smart" }
+78 = { field = "maleEquipModelId3", type = "big_smart" }
+79 = { field = "femaleEquipModelId3", type = "big_smart" }
+97 = { field = "certId", type = "big_smart" }
+98 = { field = "certTemplateId", type = "big_smart" }
+121 = { field = "lendId", type = "big_smart" }
+122 = { field = "lendTemplateId", type = "big_smart" }
+
+# Item definition opcodes - 742 revision overrides
+# 742 uses big_smart for model IDs and archive refs, but cert/lend refs remain unsigned_short
+[742]
+1 = { field = "modelId", type = "big_smart" }
+23 = { field = "maleEquip1", type = "big_smart" }
+24 = { field = "maleEquip2", type = "big_smart" }
+25 = { field = "femaleEquip1", type = "big_smart" }
+26 = { field = "femaleEquip2", type = "big_smart" }
+78 = { field = "maleEquipModelId3", type = "big_smart" }
+79 = { field = "femaleEquipModelId3", type = "big_smart" }
+90 = { field = "unknownInt1", type = "big_smart" }
+91 = { field = "unknownInt2", type = "big_smart" }
+92 = { field = "unknownInt3", type = "big_smart" }
+93 = { field = "unknownInt4", type = "big_smart" }

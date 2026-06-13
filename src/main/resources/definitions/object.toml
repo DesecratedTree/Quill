@@ -1,0 +1,93 @@
+# Object definition opcodes - 634 revision
+# types: unsigned_byte, byte, unsigned_short, short, int, big_smart, smart, string, flag, flag_clear,
+#       color_pairs, texture_pairs, byte_array, params, model_def, transforms,
+#       skip, skip_byte, skip_short, skip_2_shorts, skip_3_bytes, skip_byte_short,
+#       unsigned_short_array, string_array
+[634]
+1 = { field = "", type = "model_def" }
+2 = { field = "name", type = "string" }
+14 = { field = "sizeX", type = "unsigned_byte" }
+15 = { field = "sizeY", type = "unsigned_byte" }
+17 = { field = "", type = "object_props_17" }
+18 = { field = "blocksSky", type = "flag_clear" }
+19 = { field = "interactive", type = "unsigned_byte" }
+21 = { field = "contouredGround", type = "object_contour_21" }
+22 = { field = "delayShading", type = "flag" }
+23 = { field = "culling", type = "object_culling_23" }
+24 = { field = "animations", type = "single_animation" }
+27 = { field = "solid", type = "object_solid_27" }
+28 = { field = "offsetMultiplier", type = "object_offset_mult" }
+29 = { field = "brightness", type = "byte" }
+30 = { field = "options", type = "string_array", index = 0 }
+31 = { field = "options", type = "string_array", index = 1 }
+32 = { field = "options", type = "string_array", index = 2 }
+33 = { field = "options", type = "string_array", index = 3 }
+34 = { field = "options", type = "string_array", index = 4 }
+39 = { field = "contrast", type = "object_contrast" }
+40 = { field = "colours", type = "color_pairs" }
+41 = { field = "textureColours", type = "texture_pairs" }
+42 = { field = "recolourPalette", type = "byte_array" }
+62 = { field = "mirrored", type = "flag" }
+64 = { field = "castsShadow", type = "flag_clear" }
+65 = { field = "modelSizeX", type = "unsigned_short" }
+66 = { field = "modelSizeZ", type = "unsigned_short" }
+67 = { field = "modelSizeY", type = "unsigned_short" }
+69 = { field = "blockFlag", type = "unsigned_byte" }
+70 = { field = "offsetX", type = "object_offset" }
+71 = { field = "offsetZ", type = "object_offset" }
+72 = { field = "offsetY", type = "object_offset" }
+73 = { field = "blocksLand", type = "flag" }
+74 = { field = "ignoreOnRoute", type = "flag" }
+75 = { field = "supportItems", type = "unsigned_byte" }
+77 = { field = "", type = "transforms" }
+78 = { field = "", type = "object_78" }
+79 = { field = "", type = "object_79" }
+81 = { field = "", type = "object_contour_81" }
+82 = { field = "hideMinimap", type = "flag" }
+88 = { field = "aBoolean2972", type = "flag_clear" }
+89 = { field = "animateImmediately", type = "flag_clear" }
+91 = { field = "isMembers", type = "flag" }
+92 = { field = "", type = "transforms_extended" }
+93 = { field = "", type = "object_contour_93" }
+94 = { field = "contouredGround", type = "object_contour_94" }
+95 = { field = "", type = "object_contour_95" }
+97 = { field = "aBoolean3056", type = "flag" }
+98 = { field = "aBoolean2998", type = "flag" }
+99 = { field = "", type = "object_99" }
+100 = { field = "", type = "object_100" }
+101 = { field = "anInt2958", type = "unsigned_byte" }
+102 = { field = "mapscene", type = "unsigned_short" }
+103 = { field = "culling", type = "object_culling_103" }
+104 = { field = "anInt3024", type = "unsigned_byte" }
+105 = { field = "invertMapScene", type = "flag" }
+106 = { field = "", type = "object_106" }
+107 = { field = "mapDefinitionId", type = "unsigned_short" }
+150 = { field = "memberOptions", type = "string_array", index = 0 }
+151 = { field = "memberOptions", type = "string_array", index = 1 }
+152 = { field = "memberOptions", type = "string_array", index = 2 }
+153 = { field = "memberOptions", type = "string_array", index = 3 }
+154 = { field = "memberOptions", type = "string_array", index = 4 }
+160 = { field = "anIntArray2981", type = "unsigned_short_array" }
+162 = { field = "", type = "object_contour_162" }
+163 = { field = "", type = "object_163" }
+164 = { field = "anInt2964", type = "unsigned_short" }
+165 = { field = "anInt2963", type = "unsigned_short" }
+166 = { field = "anInt3018", type = "unsigned_short" }
+167 = { field = "anInt2983", type = "short" }
+168 = { field = "aBoolean2961", type = "flag" }
+169 = { field = "aBoolean2993", type = "flag" }
+170 = { field = "anInt3032", type = "smart" }
+171 = { field = "anInt2962", type = "smart" }
+173 = { field = "", type = "object_173" }
+177 = { field = "aBoolean2992", type = "flag" }
+178 = { field = "anInt2975", type = "unsigned_byte" }
+249 = { field = "params", type = "params" }
+
+[742]
+# Object 742 revision
+1 = { field = "", type = "model_def_742" }
+24 = { field = "animations", type = "single_animation_742" }
+60 = { field = "", type = "skip" }
+102 = { field = "mapscene", type = "big_smart" }
+106 = { field = "", type = "object_106_742" }
+107 = { field = "mapDefinitionId", type = "big_smart" }

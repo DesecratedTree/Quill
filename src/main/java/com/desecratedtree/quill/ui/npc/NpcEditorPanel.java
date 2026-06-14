@@ -131,10 +131,7 @@ public class NpcEditorPanel extends JPanel {
         c.gridy = 8;
         c.weighty = 1.0;
         panel.add(createColorsPanel(), c);
-        Dimension pref = panel.getPreferredSize();
-        panel.setPreferredSize(new Dimension(Math.max(800, pref.width), pref.height));
         formScroll = new JScrollPane(panel);
-        formScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         formScroll.getVerticalScrollBar().setUnitIncrement(16);
         return formScroll;
     }
@@ -163,7 +160,7 @@ public class NpcEditorPanel extends JPanel {
         modelArray.setEditable(false);
         arrayPanel.add(modelArray, BorderLayout.CENTER);
         panel.add(arrayPanel, BorderLayout.SOUTH);
-        panel.setPreferredSize(new Dimension(0, 300));
+        panel.setPreferredSize(new Dimension(0, 350));
         return panel;
     }
 
@@ -171,7 +168,7 @@ public class NpcEditorPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(new TitledBorder("Options"));
         panel.add(new JScrollPane(options), BorderLayout.CENTER);
-        panel.setPreferredSize(new Dimension(0, 160));
+        panel.setPreferredSize(new Dimension(0, 200));
         return panel;
     }
 

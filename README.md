@@ -4,6 +4,9 @@
 
 Built with **Java Swing**, **FlatLaf**, **Kotlin / Java**, and **Gradle**.
 
+## Known Bugs:
+- The NPC editor layout and animation previews are currently broken due to a refactor of the code. Will be updating and removing this message at some point today.
+
 ## Features
 
 **Item Editor**: Browse and edit item definitions including name, stackable, value, equipment models, inventory options, recolor mappings, and parameters. Preview inventory sprites with cache-accurate rotation, zoom, offsets, and recolors. Preview 3D models in an interactive viewer. View, save, replace, and export individual item model data.

@@ -4,7 +4,7 @@
 #       model_translations, skip, skip_byte, skip_short, skip_2_shorts, skip_2_bytes, skip_3_bytes,
 #       skip_byte_short, skip_complex_106, skip_complex_118, skip_complex_134, skip_complex_160
 [634]
-1 = { field = "modelIds", type = "model_array" }
+1 = { field = "modelIds", type = "model_array_742" }
 2 = { field = "name", type = "string" }
 12 = { field = "size", type = "unsigned_byte" }
 30 = { field = "options", type = "string_array", index = 0 }
@@ -15,7 +15,7 @@
 40 = { field = "modelColors", type = "color_pairs" }
 41 = { field = "textureIds", type = "texture_pairs" }
 42 = { field = "", type = "byte_array_skip" }
-60 = { field = "headModelIds", type = "head_model_array" }
+60 = { field = "headModelIds", type = "head_model_array_742" }
 93 = { field = "visibleOnMinimap", type = "flag_clear" }
 95 = { field = "combatLevel", type = "unsigned_short" }
 97 = { field = "resizeX", type = "unsigned_short" }
@@ -29,12 +29,15 @@
 107 = { field = "clickable", type = "flag_clear" }
 109 = { field = "", type = "skip" }
 111 = { field = "", type = "skip" }
+44 = { field = "", type = "skip_short" }
+45 = { field = "", type = "skip_short" }
 113 = { field = "", type = "skip_2_shorts" }
 114 = { field = "", type = "skip_2_bytes" }
+115 = { field = "", type = "skip_2_bytes" }
 118 = { field = "", type = "skip_complex_118" }
 119 = { field = "", type = "skip_byte" }
 121 = { field = "", type = "model_translations" }
-122 = { field = "", type = "skip_short" }
+122 = { field = "", type = "skip_big_smart" }
 123 = { field = "", type = "skip_short" }
 125 = { field = "", type = "skip_byte" }
 127 = { field = "renderAnimId", type = "unsigned_short" }
@@ -43,8 +46,8 @@
 135 = { field = "", type = "skip_byte_short" }
 136 = { field = "", type = "skip_byte_short" }
 137 = { field = "", type = "skip_short" }
-138 = { field = "", type = "skip_short" }
-139 = { field = "", type = "skip_short" }
+138 = { field = "", type = "skip_big_smart" }
+139 = { field = "", type = "skip_big_smart" }
 140 = { field = "", type = "skip_byte" }
 141 = { field = "", type = "skip" }
 142 = { field = "", type = "skip_short" }
@@ -62,20 +65,22 @@
 163 = { field = "", type = "skip_byte" }
 164 = { field = "", type = "skip_short_short" }
 165 = { field = "", type = "skip_byte" }
+170 = { field = "", type = "skip_short" }
+171 = { field = "", type = "skip_short" }
+172 = { field = "", type = "skip_short" }
+173 = { field = "", type = "skip_short" }
+174 = { field = "", type = "skip_short" }
+175 = { field = "", type = "skip_short" }
 249 = { field = "params", type = "params" }
 
 [742]
 # NPC 742 revision
 # Opcodes with different data consumption vs 634 must be overridden
-# NOTE: model IDs remain unsigned shorts in this revision
 # opcode 98: 634 reads resizeY (unsigned_short), 742 is a boolean flag with no data
 98 = { field = "", type = "skip" }
 # opcode 99: 634 has no data (skip), 742 reads an unsigned_short
 99 = { field = "", type = "skip_short" }
-# opcodes 122/138/139: 634 reads unsigned_short, 742 reads big_smart (variable width)
-122 = { field = "", type = "skip_big_smart" }
+# opcodes 122/138/139: big_smart in both 634 and 742 (Venomite RS3 uses readBigSmart)
 127 = { field = "renderAnimId", type = "big_smart" }
-138 = { field = "", type = "skip_big_smart" }
-139 = { field = "", type = "skip_big_smart" }
 # opcode 168: not present in 634, reads an unsigned_byte in 742
 168 = { field = "", type = "skip_byte" }

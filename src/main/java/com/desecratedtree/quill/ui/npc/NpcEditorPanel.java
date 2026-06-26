@@ -1,27 +1,20 @@
 package com.desecratedtree.quill.ui.npc;
 
-import com.desecratedtree.quill.cache.CacheManager;
 import com.desecratedtree.quill.codec.npc.NpcSaver;
-import com.desecratedtree.quill.defs.ItemDefinitions;
 import com.desecratedtree.quill.defs.NpcDefinitions;
 import com.desecratedtree.quill.defs.RenderAnimationDefinitions;
 import com.desecratedtree.quill.defs.SequenceDefinitions;
 import com.desecratedtree.quill.render.ModelDecoderAdapter;
 import com.desecratedtree.quill.render.ModelViewerPanel;
 import com.desecratedtree.quill.ui.component.ColorMappingsPanel;
-import com.desecratedtree.quill.ui.component.SearchableComboBox;
 import com.desecratedtree.quill.ui.component.SimpleDocumentListener;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.function.IntConsumer;
-import java.util.stream.IntStream;
 
 public class NpcEditorPanel extends JPanel {
 
@@ -43,8 +36,6 @@ public class NpcEditorPanel extends JPanel {
 
     private final JButton addModel = new JButton("Add Model");
 
-    private final JLabel itemIndexStatus = new JLabel("Loading item model index...");
-
     private final JTextArea options = createTextArea(5, true);
 
     private final JCheckBox minimap = new JCheckBox("Visible On Minimap");
@@ -63,8 +54,6 @@ public class NpcEditorPanel extends JPanel {
 
     private JScrollPane formScroll;
 
-    private ItemModelIndex itemModelIndex = ItemModelIndex.empty();
-
     private boolean updatingModels;
 
     public NpcEditorPanel() {
@@ -76,7 +65,6 @@ public class NpcEditorPanel extends JPanel {
         saveButton.addActionListener(e -> save());
         addModel.addActionListener(e -> addModel());
         renderAnim.getDocument().addDocumentListener(SimpleDocumentListener.onChange(this::updatePreview));
-        loadItemModelIndex();
     }
 
     public void setSaveListener(IntConsumer saveListener) {
@@ -150,7 +138,6 @@ public class NpcEditorPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(4, 4));
         panel.setBorder(new TitledBorder("Models"));
         JPanel header = new JPanel(new BorderLayout(4, 4));
-        header.add(itemIndexStatus, BorderLayout.WEST);
         header.add(addModel, BorderLayout.EAST);
         panel.add(header, BorderLayout.NORTH);
         modelRowsPanel.setBorder(new EmptyBorder(4, 0, 4, 0));
@@ -298,30 +285,11 @@ public class NpcEditorPanel extends JPanel {
 
     private ModelRow createModelRow(int modelId) {
         ModelRow row = new ModelRow();
-        row.itemBox = new JComboBox<>();
-        row.itemBox.setEditable(true);
-        row.itemBox.setPreferredSize(new Dimension(260, 22));
-        populateItemModelBox(row.itemBox);
-        selectItemModel(row.itemBox, modelId);
         row.modelIdField = new JTextField(modelId >= 0 ? String.valueOf(modelId) : "", 8);
         row.modelIdField.setPreferredSize(new Dimension(80, 22));
         row.removeBtn = new JButton("x");
         row.removeBtn.setMargin(new Insets(0, 4, 0, 4));
-        row.itemBox.addActionListener(e -> {
-            if (updatingModels || SearchableComboBox.isFiltering(row.itemBox)) {
-                return;
-            }
-            Object selected = row.itemBox.getSelectedItem();
-            if (selected instanceof ItemModelChoice) {
-                ItemModelChoice choice = (ItemModelChoice) selected;
-                if (choice.modelId < 0) {
-                    return;
-                }
-                row.modelIdField.setText(String.valueOf(choice.modelId));
-            }
-        });
         row.modelIdField.getDocument().addDocumentListener(SimpleDocumentListener.onChange(this::modelRowsChanged));
-        int currentModelId = parseInt(row.modelIdField, -1);
         row.removeBtn.addActionListener(e -> {
             modelRows.remove(row);
             rebuildModelRows();
@@ -342,12 +310,9 @@ public class NpcEditorPanel extends JPanel {
             c.weightx = 0;
             modelRowsPanel.add(new JLabel(String.valueOf(i)), c);
             c.gridx = 1;
-            c.weightx = 0.7;
-            modelRowsPanel.add(row.itemBox, c);
-            c.gridx = 2;
-            c.weightx = 0.2;
+            c.weightx = 1.0;
             modelRowsPanel.add(row.modelIdField, c);
-            c.gridx = 3;
+            c.gridx = 2;
             c.weightx = 0;
             modelRowsPanel.add(row.removeBtn, c);
         }
@@ -368,78 +333,6 @@ public class NpcEditorPanel extends JPanel {
         }
         modelArray.setText(join(currentModelIds()));
         updatePreview();
-    }
-
-    private void populateItemModelBox(JComboBox<ItemModelChoice> box) {
-        Object previous = box.getSelectedItem();
-        List<ItemModelChoice> allChoices = new ArrayList<>();
-        box.removeAllItems();
-        ItemModelChoice placeholder = new ItemModelChoice(-1, "Select mapped item");
-        allChoices.add(placeholder);
-        box.addItem(placeholder);
-        for (ItemModelChoice choice : itemModelIndex.choices) {
-            allChoices.add(choice);
-            box.addItem(choice);
-        }
-        SearchableComboBox.install(box, allChoices);
-        if (previous instanceof ItemModelChoice) {
-            selectItemModel(box, ((ItemModelChoice) previous).modelId);
-        }
-    }
-
-    private void selectItemModel(JComboBox<ItemModelChoice> box, int modelId) {
-        if (modelId < 0) {
-            box.setSelectedIndex(0);
-            return;
-        }
-        for (int i = 0; i < box.getItemCount(); i++) {
-            ItemModelChoice choice = box.getItemAt(i);
-            if (choice.modelId == modelId) {
-                box.setSelectedIndex(i);
-                return;
-            }
-        }
-        box.setSelectedItem(new ItemModelChoice(modelId, modelLabel(modelId)));
-    }
-
-    private String modelLabel(int modelId) {
-        String label = itemModelIndex.labelFor(modelId);
-        return label != null ? modelId + " - " + label : String.valueOf(modelId);
-    }
-
-    private void refreshModelLabels() {
-        updatingModels = true;
-        for (ModelRow row : modelRows) {
-            int currentModelId = parseInt(row.modelIdField, -1);
-            populateItemModelBox(row.itemBox);
-            selectItemModel(row.itemBox, currentModelId);
-        }
-        updatingModels = false;
-        rebuildModelRows();
-        modelArray.setText(join(currentModelIds()));
-    }
-
-    private void loadItemModelIndex() {
-        new SwingWorker<ItemModelIndex, Void>() {
-
-            @Override
-
-            protected ItemModelIndex doInBackground() {
-                return ItemModelIndex.build();
-            }
-
-            @Override
-
-            protected void done() {
-                try {
-                    itemModelIndex = get();
-                    itemIndexStatus.setText("Indexed " + itemModelIndex.modelCount() + " item models");
-                    refreshModelLabels();
-                } catch (Exception ex) {
-                    itemIndexStatus.setText("Failed to load item model index");
-                }
-            }
-        }.execute();
     }
 
     private int parseInt(JTextField field, int fallback) {
@@ -496,120 +389,8 @@ public class NpcEditorPanel extends JPanel {
 
     private static final class ModelRow {
 
-        private JComboBox<ItemModelChoice> itemBox;
-
         private JTextField modelIdField;
 
         private JButton removeBtn;
-    }
-
-    private static final class ItemModelChoice {
-
-        private final int modelId;
-
-        private final String label;
-
-        private final String itemName;
-
-        private final String slot;
-        ItemModelChoice(int modelId, String label) {
-            this.modelId = modelId;
-            this.label = label;
-            this.itemName = null;
-            this.slot = null;
-        }
-        ItemModelChoice(int modelId, String label, String itemName, String slot) {
-            this.modelId = modelId;
-            this.label = label;
-            this.itemName = itemName;
-            this.slot = slot;
-        }
-        int modelId() {
-            return modelId;
-        }
-        String itemName() {
-            return itemName;
-        }
-        String slot() {
-            return slot;
-        }
-
-        @Override
-
-        public String toString() {
-            return label;
-        }
-    }
-
-    private static final class ItemModelIndex {
-
-        private final Map<Integer, String> labelsByModelId;
-
-        private final List<ItemModelChoice> choices;
-
-        private ItemModelIndex(Map<Integer, String> labelsByModelId, List<ItemModelChoice> choices) {
-            this.labelsByModelId = labelsByModelId;
-            this.choices = choices;
-        }
-        static ItemModelIndex empty() {
-            return new ItemModelIndex(new HashMap<>(), new ArrayList<>());
-        }
-        static ItemModelIndex build() {
-            Map<Integer, String> labelsByModelId = new HashMap<>();
-            List<ItemModelChoice> choices = new ArrayList<>();
-            int count = CacheManager.getItemCount();
-            for (int i = 0; i < count; i++) {
-                ItemDefinitions def = ItemDefinitions.getItemDefinitions(i);
-                if (def == null || def.getModelId() < 0) {
-                    continue;
-                }
-                int modelId = def.getModelId();
-                String itemName = def.getName();
-                String slotLabel = slotLabel(def.equipSlot);
-                String choiceLabel = i + " - " + (itemName != null ? itemName : "item_" + i);
-                addModel(labelsByModelId, choices, i, modelId, itemName, slotLabel);
-            }
-            choices.sort((a, b) -> Integer.compare(a.modelId, b.modelId));
-            return new ItemModelIndex(labelsByModelId, choices);
-        }
-
-        private static void addModel(Map<Integer, String> labels, List<ItemModelChoice> choices,
-                                     int itemId, int modelId, String itemName, String slot) {
-            if (modelId < 0) {
-                return;
-            }
-            if (!labels.containsKey(modelId)) {
-                labels.put(modelId, itemId + " - " + (itemName != null ? itemName : "item_" + itemId));
-            }
-            choices.add(new ItemModelChoice(modelId,
-                    itemId + " - " + (itemName != null ? itemName : "item_" + itemId),
-                    itemName, slot));
-        }
-        String labelFor(int modelId) {
-            return labelsByModelId.get(modelId);
-        }
-        List<ItemModelChoice> choices() {
-            return choices;
-        }
-        int modelCount() {
-            return choices.size();
-        }
-
-        private static String slotLabel(int slot) {
-            switch (slot) {
-                case 0: return "head";
-                case 1: return "cape";
-                case 2: return "neck";
-                case 3: return "weapon";
-                case 4: return "body";
-                case 5: return "shield";
-                case 7: return "legs";
-                case 9: return "hands";
-                case 10: return "feet";
-                case 12: return "ring";
-                case 13: return "arrow";
-                default: return "slot_" + slot;
-            }
-        }
     }
 }

@@ -2,6 +2,7 @@
 1 = { field = "", type = "sequence_frames" }
 2 = { field = "", type = "skip_short" }
 3 = { field = "", type = "skip_complex_3" }
+4 = { field = "", type = "flag" }
 5 = { field = "", type = "skip_byte" }
 6 = { field = "", type = "skip_short" }
 7 = { field = "", type = "skip_short" }
@@ -14,6 +15,7 @@
 14 = { field = "", type = "skip" }
 15 = { field = "", type = "skip" }
 16 = { field = "", type = "skip" }
+17 = { field = "", type = "skip_byte" }
 18 = { field = "", type = "skip" }
 19 = { field = "", type = "skip_2_bytes" }
 20 = { field = "", type = "skip_sequence_20" }

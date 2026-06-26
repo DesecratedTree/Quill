@@ -499,6 +499,30 @@ public final class DefinitionHandler {
                     setField("modelTypes", modelTypes, target);
                     break;
                 }
+                case "object_model_def_742_5": {
+                    int length = stream.readUnsignedByte();
+                    int[][] modelIds = new int[length][];
+                    byte[] modelTypes = new byte[length];
+                    for (int i = 0; i < length; i++) {
+                        modelTypes[i] = (byte) stream.readByte();
+                        int count = stream.readUnsignedByte();
+                        modelIds[i] = new int[count];
+                        for (int j = 0; j < count; j++) {
+                            modelIds[i][j] = stream.readBigSmart();
+                        }
+                    }
+                    setField("modelIds", modelIds, target);
+                    setField("modelTypes", modelTypes, target);
+                    int extraLen = stream.readUnsignedByte();
+                    for (int i = 0; i < extraLen; i++) {
+                        stream.readByte();
+                        int subCount = stream.readUnsignedByte();
+                        for (int j = 0; j < subCount; j++) {
+                            stream.readBigSmart();
+                        }
+                    }
+                    break;
+                }
                 case "object_props_17": {
                     setFieldBoolean("blocksSky", false, target);
                     setFieldInt("solid", 0, target);
@@ -627,6 +651,15 @@ public final class DefinitionHandler {
                     }
                     setField("animations", anims, target);
                     setField("percents", percs, target);
+                    break;
+                }
+                case "object_160": {
+                    int count = stream.readUnsignedByte();
+                    int[] arr = new int[count];
+                    for (int i = 0; i < count; i++) {
+                        arr[i] = stream.readUnsignedShort();
+                    }
+                    setField(def.field, arr, target);
                     break;
                 }
                 case "object_contour_162": {

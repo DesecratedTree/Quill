@@ -13,13 +13,13 @@
 28 = { field = "", type = "skip_12_bytes" }
 29 = { field = "", type = "skip_byte" }
 30 = { field = "", type = "skip_short" }
-31 = { field = "", type = "skip_short" }
+31 = { field = "", type = "skip_byte" }
 32 = { field = "", type = "skip_short" }
 33 = { field = "", type = "skip_short_signed" }
 34 = { field = "", type = "skip_byte" }
 35 = { field = "", type = "skip_short" }
 36 = { field = "", type = "skip_short_signed" }
-37 = { field = "", type = "skip_short" }
+37 = { field = "", type = "skip_byte" }
 38 = { field = "", type = "skip_short" }
 39 = { field = "", type = "skip_short" }
 40 = { field = "", type = "skip_short" }

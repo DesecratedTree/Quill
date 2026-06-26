@@ -5,7 +5,7 @@
 #       short_array, multi_field, skip
 #       634 is used as the base for item definitions, add fields for overrides. Examples below.
 [634]
-1 = { field = "modelId", type = "unsigned_short" }
+1 = { field = "modelId", type = "big_smart" }
 2 = { field = "name", type = "string" }
 4 = { field = "modelZoom", type = "unsigned_short" }
 5 = { field = "modelRotation1", type = "unsigned_short" }
@@ -18,10 +18,10 @@
 14 = { field = "equipType", type = "unsigned_byte" }
 16 = { field = "membersOnly", type = "flag" }
 18 = { field = "", type = "skip_short" }
-23 = { field = "maleEquip1", type = "unsigned_short" }
-24 = { field = "maleEquip2", type = "unsigned_short" }
-25 = { field = "femaleEquip1", type = "unsigned_short" }
-26 = { field = "femaleEquip2", type = "unsigned_short" }
+23 = { field = "maleEquip1", type = "big_smart" }
+24 = { field = "maleEquip2", type = "big_smart" }
+25 = { field = "femaleEquip1", type = "big_smart" }
+26 = { field = "femaleEquip2", type = "big_smart" }
 27 = { field = "", type = "skip_byte" }
 30 = { field = "groundOptions", type = "string_array", index = 0 }
 31 = { field = "groundOptions", type = "string_array", index = 1 }
@@ -39,12 +39,13 @@
 44 = { field = "", type = "skip_complex_44" }
 45 = { field = "", type = "skip_complex_45" }
 65 = { field = "unnoted", type = "flag" }
-78 = { field = "maleEquipModelId3", type = "unsigned_short" }
-79 = { field = "femaleEquipModelId3", type = "unsigned_short" }
-90 = { field = "unknownInt1", type = "unsigned_short" }
-91 = { field = "unknownInt2", type = "unsigned_short" }
-92 = { field = "unknownInt3", type = "unsigned_short" }
-93 = { field = "unknownInt4", type = "unsigned_short" }
+66 = { field = "", type = "skip_big_smart" }
+78 = { field = "maleEquipModelId3", type = "big_smart" }
+79 = { field = "femaleEquipModelId3", type = "big_smart" }
+90 = { field = "unknownInt1", type = "big_smart" }
+91 = { field = "unknownInt2", type = "big_smart" }
+92 = { field = "unknownInt3", type = "big_smart" }
+93 = { field = "unknownInt4", type = "big_smart" }
 95 = { field = "unknownInt5", type = "unsigned_short" }
 96 = { field = "unknownInt6", type = "unsigned_byte" }
 97 = { field = "certId", type = "unsigned_short" }

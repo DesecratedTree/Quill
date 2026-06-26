@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import com.desecratedtree.quill.defs.DefinitionHandler.FieldDefinition;
 
 @SuppressWarnings("unused")
 
@@ -335,203 +336,40 @@ public final class ItemDefinitions {
     }
 
     private void appendOpcodeDumpLine(StringBuilder dump, InputStream stream, int opcode) {
-        if (opcode == 1) {
-            appendDumpLine(dump, "model_id", stream.readUnsignedShort());
-        } else if (opcode == 2) {
-            appendDumpLine(dump, "name", stream.readString());
-        } else if (opcode == 4) {
-            appendDumpLine(dump, "model_zoom", stream.readUnsignedShort());
-        } else if (opcode == 5) {
-            appendDumpLine(dump, "model_rotation_x", stream.readUnsignedShort());
-        } else if (opcode == 6) {
-            appendDumpLine(dump, "model_rotation_y", stream.readUnsignedShort());
-        } else if (opcode == 7) {
-            int value = stream.readUnsignedShort();
-            if (value > 32767) value -= 65536;
-            appendDumpLine(dump, "model_offset_x", value);
-        } else if (opcode == 8) {
-            int value = stream.readUnsignedShort();
-            if (value > 32767) value -= 65536;
-            appendDumpLine(dump, "model_offset_y", value);
-        } else if (opcode == 11) {
-            appendDumpLine(dump, "stackable", true);
-        } else if (opcode == 12) {
-            appendDumpLine(dump, "value", stream.readInt());
-        } else if (opcode == 13) {
-            appendDumpLine(dump, "equip_slot", stream.readUnsignedByte());
-        } else if (opcode == 14) {
-            appendDumpLine(dump, "equip_type", stream.readUnsignedByte());
-        } else if (opcode == 16) {
-            appendDumpLine(dump, "members_only", true);
-        } else if (opcode == 18) {
-            appendDumpLine(dump, "opcode_18", stream.readUnsignedShort());
-        } else if (opcode == 23) {
-            appendDumpLine(dump, "male_equip_1", stream.readUnsignedShort());
-        } else if (opcode == 24) {
-            appendDumpLine(dump, "male_equip_2", stream.readUnsignedShort());
-        } else if (opcode == 25) {
-            appendDumpLine(dump, "female_equip_1", stream.readUnsignedShort());
-        } else if (opcode == 26) {
-            appendDumpLine(dump, "female_equip_2", stream.readUnsignedShort());
-        } else if (opcode == 27) {
-            appendDumpLine(dump, "opcode_27", stream.readUnsignedByte());
-        } else if (opcode >= 30 && opcode < 35) {
-            appendDumpLine(dump, "ground_option_" + (opcode - 30), stream.readString());
-        } else if (opcode >= 35 && opcode < 40) {
-            appendDumpLine(dump, "inventory_option_" + (opcode - 35), stream.readString());
-        } else if (opcode == 40) {
-            int length = stream.readUnsignedByte();
-            List<String> mappings = new ArrayList<>(length);
-            for (int index = 0; index < length; index++) {
-                mappings.add(stream.readUnsignedShort() + "->" + stream.readUnsignedShort());
+        FieldDefinition def = handler().resolve(opcode);
+        if (def != null) {
+            handler().read(this, stream, opcode);
+            Object after = !def.field.isEmpty() ? getFieldValue(def.field) : null;
+            String label = !def.field.isEmpty() ? def.field : "opcode_" + opcode;
+            String value;
+            if (after == null) {
+                value = "(skip)";
+            } else if (after instanceof int[]) {
+                value = Arrays.toString((int[]) after);
+            } else if (after instanceof byte[]) {
+                value = Arrays.toString((byte[]) after);
+            } else if (after instanceof int[][]) {
+                value = Arrays.deepToString((int[][]) after);
+            } else if (after instanceof String[]) {
+                value = Arrays.toString((String[]) after);
+            } else if (after instanceof boolean[]) {
+                value = Arrays.toString((boolean[]) after);
+            } else {
+                value = after.toString();
             }
-            appendDumpLine(dump, "recolor_map", joinList(mappings));
-        } else if (opcode == 41) {
-            int length = stream.readUnsignedByte();
-            List<String> mappings = new ArrayList<>(length);
-            for (int index = 0; index < length; index++) {
-                mappings.add(stream.readUnsignedShort() + "->" + stream.readUnsignedShort());
-            }
-            appendDumpLine(dump, "retexture_map", joinList(mappings));
-        } else if (opcode == 42) {
-            int length = stream.readUnsignedByte();
-            byte[] values = new byte[length];
-            for (int index = 0; index < length; index++) {
-                values[index] = (byte) stream.readByte();
-            }
-            appendDumpLine(dump, "opcode_42", Arrays.toString(values));
-        } else if (opcode == 44) {
-            appendDumpLine(dump, "opcode_44", stream.readUnsignedShort());
-        } else if (opcode == 45) {
-            appendDumpLine(dump, "opcode_45", stream.readUnsignedShort());
-        } else if (opcode == 65) {
-            appendDumpLine(dump, "unnoted", true);
-        } else if (opcode == 78) {
-            appendDumpLine(dump, "male_equip_3", stream.readUnsignedShort());
-        } else if (opcode == 79) {
-            appendDumpLine(dump, "female_equip_3", stream.readUnsignedShort());
-        } else if (opcode == 90) {
-            appendDumpLine(dump, "male_head_1", stream.readUnsignedShort());
-        } else if (opcode == 91) {
-            appendDumpLine(dump, "female_head_1", stream.readUnsignedShort());
-        } else if (opcode == 92) {
-            appendDumpLine(dump, "male_head_2", stream.readUnsignedShort());
-        } else if (opcode == 93) {
-            appendDumpLine(dump, "female_head_2", stream.readUnsignedShort());
-        } else if (opcode == 95) {
-            appendDumpLine(dump, "inventory_rotation_z", stream.readUnsignedShort());
-        } else if (opcode == 96) {
-            appendDumpLine(dump, "opcode_96", stream.readUnsignedByte());
-        } else if (opcode == 97) {
-            appendDumpLine(dump, "cert_id", stream.readUnsignedShort());
-        } else if (opcode == 98) {
-            appendDumpLine(dump, "cert_template_id", stream.readUnsignedShort());
-        } else if (opcode >= 100 && opcode < 110) {
-            int stackId = stream.readUnsignedShort();
-            int stackAmount = stream.readUnsignedShort();
-            appendDumpLine(dump, "stack_variant_" + (opcode - 100), "item=" + stackId + ", amount=" + stackAmount);
-        } else if (opcode == 110) {
-            appendDumpLine(dump, "resize_x", stream.readUnsignedShort());
-        } else if (opcode == 111) {
-            appendDumpLine(dump, "resize_y", stream.readUnsignedShort());
-        } else if (opcode == 112) {
-            appendDumpLine(dump, "resize_z", stream.readUnsignedShort());
-        } else if (opcode == 113) {
-            appendDumpLine(dump, "ambient", stream.readByte());
-        } else if (opcode == 114) {
-            appendDumpLine(dump, "contrast", stream.readByte() * 5);
-        } else if (opcode == 115) {
-            appendDumpLine(dump, "team_id", stream.readUnsignedByte());
-        } else if (opcode == 121) {
-            appendDumpLine(dump, "lend_id", stream.readUnsignedShort());
-        } else if (opcode == 122) {
-            appendDumpLine(dump, "lend_template_id", stream.readUnsignedShort());
-        } else if (opcode == 124) {
-            List<Integer> values = new ArrayList<>(6);
-            for (int i = 0; i < 6; i++) {
-                values.add(stream.readUnsignedShort());
-            }
-            appendDumpLine(dump, "opcode_124", joinList(values));
-        } else if (opcode == 125) {
-            appendDumpLine(dump, "male_wear_offsets", stream.readByte() + ", " + stream.readByte() + ", " + stream.readByte());
-        } else if (opcode == 126) {
-            appendDumpLine(dump, "female_wear_offsets", stream.readByte() + ", " + stream.readByte() + ", " + stream.readByte());
-        } else if (opcode == 127) {
-            appendDumpLine(dump, "cursor_1", "type=" + stream.readUnsignedByte() + ", sprite=" + stream.readUnsignedShort());
-        } else if (opcode == 128) {
-            appendDumpLine(dump, "cursor_2", "type=" + stream.readUnsignedByte() + ", sprite=" + stream.readUnsignedShort());
-        } else if (opcode == 129) {
-            appendDumpLine(dump, "opcode_129", "type=" + stream.readUnsignedByte() + ", value=" + stream.readUnsignedShort());
-        } else if (opcode == 130) {
-            appendDumpLine(dump, "opcode_130", "type=" + stream.readUnsignedByte() + ", value=" + stream.readUnsignedShort());
-        } else if (opcode == 132) {
-            int length = stream.readUnsignedByte();
-            List<Integer> quests = new ArrayList<>(length);
-            for (int index = 0; index < length; index++) {
-                quests.add(stream.readUnsignedShort());
-            }
-            appendDumpLine(dump, "quests", joinList(quests));
-        } else if (opcode == 134) {
-            appendDumpLine(dump, "pick_size_shift", stream.readUnsignedByte());
-        } else if (opcode == 139) {
-            appendDumpLine(dump, "bind_link_id", stream.readUnsignedShort());
-        } else if (opcode == 140) {
-            appendDumpLine(dump, "bind_template_id", stream.readUnsignedShort());
-        } else if (opcode >= 142 && opcode < 147) {
-            appendDumpLine(dump, "opcode_" + opcode, stream.readUnsignedShort());
-        } else if (opcode == 147) {
-            appendDumpLine(dump, "opcode_147", stream.readUnsignedShort());
-        } else if (opcode >= 150 && opcode < 155) {
-            appendDumpLine(dump, "opcode_" + opcode, stream.readUnsignedShort());
-        } else if (opcode == 242) {
-            appendDumpLine(dump, "legacy_inventory_model", stream.readBigSmart());
-            appendDumpLine(dump, "legacy_inventory_zoom", stream.readBigSmart());
-        } else if (opcode == 243) {
-            appendDumpLine(dump, "legacy_male_equip_3", stream.readBigSmart());
-        } else if (opcode == 244) {
-            appendDumpLine(dump, "legacy_female_equip_3", stream.readBigSmart());
-        } else if (opcode == 245) {
-            appendDumpLine(dump, "legacy_male_equip_2", stream.readBigSmart());
-        } else if (opcode == 246) {
-            appendDumpLine(dump, "legacy_female_equip_2", stream.readBigSmart());
-        } else if (opcode == 247) {
-            appendDumpLine(dump, "legacy_male_equip_1", stream.readBigSmart());
-        } else if (opcode == 248) {
-            appendDumpLine(dump, "legacy_female_equip_1", stream.readBigSmart());
-        } else if (opcode == 249) {
-            int length = stream.readUnsignedByte();
-            List<String> params = new ArrayList<>(length);
-            for (int index = 0; index < length; index++) {
-                boolean stringInstance = stream.readUnsignedByte() == 1;
-                int key = stream.read24BitInt();
-                Object value = stringInstance ? stream.readString() : stream.readInt();
-                params.add(key + "=" + value);
-            }
-            appendDumpLine(dump, "params", joinList(params));
-        } else if (opcode == 250) {
-            appendDumpLine(dump, "legacy_equip_type", stream.readUnsignedByte());
-        } else if (opcode == 251) {
-            int length = stream.readUnsignedByte();
-            List<String> mappings = new ArrayList<>(length);
-            for (int i = 0; i < length; i++) {
-                mappings.add(stream.readUnsignedShort() + "->" + stream.readUnsignedShort());
-            }
-            appendDumpLine(dump, "legacy_recolor_map", joinList(mappings));
-        } else if (opcode == 252) {
-            int length = stream.readUnsignedByte();
-            List<String> mappings = new ArrayList<>(length);
-            for (int i = 0; i < length; i++) {
-                mappings.add(stream.readUnsignedShort() + "->" + stream.readUnsignedShort());
-            }
-            appendDumpLine(dump, "legacy_retexture_map", joinList(mappings));
-        } else if (opcode == 253) {
-            appendDumpLine(dump, "legacy_rotation_x", stream.readUnsignedShort());
-            appendDumpLine(dump, "legacy_rotation_y", stream.readUnsignedShort());
-            appendDumpLine(dump, "legacy_offset_x", stream.readUnsignedShort());
-            appendDumpLine(dump, "legacy_offset_y", stream.readUnsignedShort());
+            appendDumpLine(dump, label, value);
         } else {
-            appendDumpLine(dump, "unhandled_opcode_" + opcode, "(dump aborted)");
-            throw new IllegalArgumentException("Unhandled opcode " + opcode + " for item " + id);
+            appendDumpLine(dump, "opcode_" + opcode, "(unknown)");
+        }
+    }
+
+    private Object getFieldValue(String fieldName) {
+        try {
+            java.lang.reflect.Field field = getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(this);
+        } catch (Exception e) {
+            return null;
         }
     }
 

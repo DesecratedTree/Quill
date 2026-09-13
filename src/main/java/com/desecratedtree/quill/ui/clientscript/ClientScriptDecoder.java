@@ -81,7 +81,7 @@ final class ClientScriptDecoder {
         }
         InputStream stream = new InputStream(data);
         int switchTrailerLength = readUnsignedShort(data, data.length - 2);
-        int metadataLength = 12;
+        int metadataLength = 13;
         int codeBlockEnd = data.length - switchTrailerLength - metadataLength - 2;
         if (codeBlockEnd <= 0 || codeBlockEnd >= data.length) {
             return ScriptInfo.invalid(scriptId, data.length, "Unable to locate the script metadata trailer.");

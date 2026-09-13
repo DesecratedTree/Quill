@@ -290,6 +290,10 @@ public final class SequenceDefinitions {
             out.writeByte(10);
             out.writeByte(1);
         }
+        if (expressionFrameCount != 0) {
+            out.writeByte(11);
+            out.writeByte(expressionFrameCount);
+        }
         if (secondaryFrameIds != null && secondaryFrameIds.length > 0) {
             out.writeByte(12);
             out.writeByte(secondaryFrameIds.length);
@@ -298,6 +302,21 @@ public final class SequenceDefinitions {
             }
             for (int frameId : secondaryFrameIds) {
                 out.writeShort((frameId >>> 16) & 0xFFFF);
+            }
+        }
+        if (sounds != null && sounds.length > 0) {
+            out.writeByte(13);
+            out.writeShort(sounds.length);
+            for (int[] sound : sounds) {
+                if (sound != null && sound.length > 0) {
+                    out.writeByte(sound.length);
+                    out.write24BitInt(sound[0]);
+                    for (int j = 1; j < sound.length; j++) {
+                        out.writeShort(sound[j]);
+                    }
+                } else {
+                    out.writeByte(0);
+                }
             }
         }
         out.writeByte(0);

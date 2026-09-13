@@ -1,0 +1,5 @@
+# Cache revision to use for definition decoding
+# RS3: 634, 742
+# OSRS: 233 (set osrs_enabled = true)
+revision = 634
+osrs_enabled = false

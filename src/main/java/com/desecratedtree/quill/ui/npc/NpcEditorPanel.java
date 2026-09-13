@@ -248,6 +248,7 @@ public class NpcEditorPanel extends JPanel {
         int animId = parseInt(renderAnim, -1);
         long baseTime = System.currentTimeMillis();
         NpcDefinitions npc = current;
+        System.err.println("[NPC-ANIM] updatePreview: npc=" + (npc == null ? "null" : npc.id) + " animId=" + animId + " modelIds=" + join(currentModelIds()));
         preview.setModelSupplier(() -> ModelDecoderAdapter.loadNpcModel(
                 npc,
                 animId,
@@ -261,10 +262,17 @@ public class NpcEditorPanel extends JPanel {
     private static int animationFrameIndexAt(int renderAnimId, long elapsedMillis) {
         RenderAnimationDefinitions renderAnim = RenderAnimationDefinitions.get(renderAnimId);
         if (renderAnim == null) {
+            System.err.println("[NPC-ANIM] animationFrameIndexAt: renderAnim is null for id=" + renderAnimId);
             return 0;
         }
         SequenceDefinitions sequence = SequenceDefinitions.get(renderAnim.idleSequenceId);
-        return sequence == null ? 0 : sequence.frameIndexAtElapsedMillis(elapsedMillis);
+        if (sequence == null) {
+            System.err.println("[NPC-ANIM] animationFrameIndexAt: sequence is null for idleSequenceId=" + renderAnim.idleSequenceId + " walkSequenceId=" + renderAnim.walkSequenceId);
+            return 0;
+        }
+        int idx = sequence.frameIndexAtElapsedMillis(elapsedMillis);
+        System.err.println("[NPC-ANIM] animationFrameIndexAt: renderAnimId=" + renderAnimId + " idleSeqId=" + renderAnim.idleSequenceId + " frameIds.length=" + sequence.frameIds.length + " elapsed=" + elapsedMillis + " idx=" + idx);
+        return idx;
     }
 
     private void setModelIds(int[] ids) {

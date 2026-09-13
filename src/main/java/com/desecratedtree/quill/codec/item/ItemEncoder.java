@@ -2,6 +2,7 @@ package com.desecratedtree.quill.codec.item;
 
 import com.desecratedtree.quill.codec.OutputStream;
 import com.desecratedtree.quill.defs.DefinitionHandler;
+import com.desecratedtree.quill.defs.DefinitionHandler.FieldDefinition;
 import com.desecratedtree.quill.defs.ItemDefinitions;
 
 public class ItemEncoder {
@@ -11,209 +12,279 @@ public class ItemEncoder {
 
     public static byte[] encode(ItemDefinitions def) {
         OutputStream stream = new OutputStream();
-        if (def.modelId != 0) {
-            HANDLER.writeOpcodeValue(def, stream, 1, def.modelId);
-        }
-        if (def.name != null) {
-            HANDLER.writeOpcodeValue(def, stream, 2, def.name);
-        }
-        if (def.modelZoom != 2000) {
-            HANDLER.writeOpcodeValue(def, stream, 4, def.modelZoom);
-        }
-        if (def.modelRotation1 != 0) {
-            HANDLER.writeOpcodeValue(def, stream, 5, def.modelRotation1);
-        }
-        if (def.modelRotation2 != 0) {
-            HANDLER.writeOpcodeValue(def, stream, 6, def.modelRotation2);
-        }
-        if (def.modelOffset1 != 0) {
-            HANDLER.writeOpcodeValue(def, stream, 7, def.modelOffset1);
-        }
-        if (def.modelOffset2 != 0) {
-            HANDLER.writeOpcodeValue(def, stream, 8, def.modelOffset2);
-        }
-        if (def.stackable == 1) {
-            stream.writeByte(11);
-        }
-        if (def.value != 1) {
-            HANDLER.writeOpcodeValue(def, stream, 12, def.value);
-        }
-        if (def.equipSlot != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 13, def.equipSlot);
-        }
-        if (def.equipType != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 14, def.equipType);
-        }
-        if (def.membersOnly) {
-            stream.writeByte(16);
-        }
-        if (def.maleEquip1 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 23, def.maleEquip1);
-        }
-        if (def.maleEquip2 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 24, def.maleEquip2);
-        }
-        if (def.femaleEquip1 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 25, def.femaleEquip1);
-        }
-        if (def.femaleEquip2 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 26, def.femaleEquip2);
-        }
-        if (def.groundOptions != null) {
-            for (int i = 0; i < def.groundOptions.length; i++) {
-                String option = def.groundOptions[i];
-                if (option != null && !option.isEmpty()) {
-                    stream.writeByte(30 + i);
-                    stream.writeString(option);
-                }
-            }
-        }
-        if (def.inventoryOptions != null) {
-            for (int i = 0; i < def.inventoryOptions.length; i++) {
-                String option = def.inventoryOptions[i];
-                if (option != null && !option.isEmpty()) {
-                    stream.writeByte(35 + i);
-                    stream.writeString(option);
-                }
-            }
-        }
-        if (def.originalModelColors != null && def.originalModelColors.length > 0) {
-            stream.writeByte(40);
-            stream.writeByte(def.originalModelColors.length);
-            for (int i = 0; i < def.originalModelColors.length; i++) {
-                stream.writeShort(def.originalModelColors[i]);
-                stream.writeShort(def.modifiedModelColors[i]);
-            }
-        }
-        if (def.originalTextureIds != null && def.originalTextureIds.length > 0) {
-            stream.writeByte(41);
-            stream.writeByte(def.originalTextureIds.length);
-            for (int i = 0; i < def.originalTextureIds.length; i++) {
-                stream.writeShort(def.originalTextureIds[i]);
-                stream.writeShort(def.modifiedTextureIds[i]);
-            }
-        }
-        if (def.unknownArray1 != null) {
-            stream.writeByte(42);
-            stream.writeByte(def.unknownArray1.length);
-            for (byte b : def.unknownArray1) {
-                stream.writeByte(b);
-            }
-        }
-        if (def.unnoted) {
-            stream.writeByte(65);
-        }
-        if (def.maleEquipModelId3 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 78, def.maleEquipModelId3);
-        }
-        if (def.femaleEquipModelId3 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 79, def.femaleEquipModelId3);
-        }
-        if (def.certId != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 97, def.certId);
-        }
-        if (def.certTemplateId != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 98, def.certTemplateId);
-        }
-        if (def.stackIds != null) {
-            for (int i = 0; i < def.stackIds.length; i++) {
-                if (def.stackIds[i] != 0) {
-                    stream.writeByte(100 + i);
-                    stream.writeShort(def.stackIds[i]);
-                    stream.writeShort(def.stackAmounts[i]);
-                }
-            }
-        }
-        if (def.unknownInt7 != 0) {
-            HANDLER.writeOpcodeValue(def, stream, 110, def.unknownInt7);
-        }
-        if (def.unknownInt8 != 0) {
-            HANDLER.writeOpcodeValue(def, stream, 111, def.unknownInt8);
-        }
-        if (def.unknownInt9 != 128) {
-            HANDLER.writeOpcodeValue(def, stream, 112, def.unknownInt9);
-        }
-        if (def.unknownInt10 != 0) {
-            HANDLER.writeOpcodeValue(def, stream, 113, def.unknownInt10);
-        }
-        if (def.unknownInt11 != 0) {
-            stream.writeByte(114);
-            stream.writeByte(def.unknownInt11 / 5);
-        }
-        if (def.teamId != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 115, def.teamId);
-        }
-        if (def.lendId != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 121, def.lendId);
-        }
-        if (def.lendTemplateId != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 122, def.lendTemplateId);
-        }
-        if (def.itemParams != null && !def.itemParams.isEmpty()) {
-            stream.writeByte(249);
-            stream.writeByte(def.itemParams.size());
-            def.itemParams.forEach((key, value) -> {
-                if (value instanceof String) {
-                    stream.writeByte(1);
-                    stream.write24BitInt(key);
-                    stream.writeString((String) value);
-                } else {
-                    stream.writeByte(0);
-                    stream.write24BitInt(key);
-                    stream.writeInt((Integer) value);
-                }
-            });
-        }
-        if (def.oldInvModel != -1) {
-            stream.writeByte(242);
-            stream.writeBigSmart(def.oldInvModel);
-            stream.writeBigSmart(def.oldInvZoom);
-        }
-        if (def.oldMaleEquip3 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 243, def.oldMaleEquip3);
-        }
-        if (def.oldFemaleEquip3 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 244, def.oldFemaleEquip3);
-        }
-        if (def.oldMaleEquip2 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 245, def.oldMaleEquip2);
-        }
-        if (def.oldFemaleEquip2 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 246, def.oldFemaleEquip2);
-        }
-        if (def.oldMaleEquip1 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 247, def.oldMaleEquip1);
-        }
-        if (def.oldFemaleEquip1 != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 248, def.oldFemaleEquip1);
-        }
-        if (def.oldEquipType != -1) {
-            HANDLER.writeOpcodeValue(def, stream, 250, def.oldEquipType);
-        }
-        if (def.oldModelColors != null) {
-            stream.writeByte(251);
-            stream.writeByte(def.oldModelColors.length);
-            for (int i = 0; i < def.oldModelColors.length; i++) {
-                stream.writeShort(def.oldModelColors[i]);
-                stream.writeShort(def.oldModifiedModelColors[i]);
-            }
-        }
-        if (def.oldModelTextures != null) {
-            stream.writeByte(252);
-            stream.writeByte(def.oldModelTextures.length);
-            for (int i = 0; i < def.oldModelTextures.length; i++) {
-                stream.writeShort(def.oldModelTextures[i]);
-                stream.writeShort(def.oldModifiedModelTextures[i]);
-            }
-        }
-        if (def.oldModelRotation1 != -1) {
-            stream.writeByte(253);
-            stream.writeShort(def.oldModelRotation1);
-            stream.writeShort(def.oldModelRotation2);
-            stream.writeShort(def.oldModelOffset1);
-            stream.writeShort(def.oldModelOffset2);
+        for (int opcode : def.presentOpcodeSet) {
+            writeOpcode(stream, def, opcode);
         }
         stream.writeByte(0);
         return stream.toByteArray();
+    }
+
+    private static void writeOpcode(OutputStream stream, ItemDefinitions def, int opcode) {
+        FieldDefinition fd = HANDLER.resolve(opcode);
+        if (fd == null) return;
+
+        switch (fd.type) {
+            case "string_array": {
+                String[] arr = getFieldArray(def, fd, String[].class);
+                if (arr == null || fd.index < 0 || fd.index >= arr.length || arr[fd.index] == null) return;
+                stream.writeByte(opcode);
+                stream.writeString(arr[fd.index]);
+                return;
+            }
+            case "unsigned_short_array": {
+                int[] arr = getFieldArray(def, fd, int[].class);
+                if (arr == null || fd.index < 0 || fd.index >= arr.length) return;
+                stream.writeByte(opcode);
+                stream.writeShort(arr[fd.index]);
+                return;
+            }
+            case "stack_variant": {
+                int[] ids = getField(def, "stackIds", int[].class);
+                int[] amounts = getField(def, "stackAmounts", int[].class);
+                if (ids == null || amounts == null || fd.index < 0 || fd.index >= ids.length || fd.index >= amounts.length) return;
+                stream.writeByte(opcode);
+                stream.writeShort(ids[fd.index]);
+                stream.writeShort(amounts[fd.index]);
+                return;
+            }
+        }
+
+        stream.writeByte(opcode);
+
+        switch (fd.type) {
+            case "flag":
+            case "flag_clear":
+                break;
+            case "unsigned_byte":
+                stream.writeByte(getFieldInt(def, fd));
+                break;
+            case "byte":
+                stream.writeByte(getFieldInt(def, fd));
+                break;
+            case "unsigned_short":
+                stream.writeShort(getFieldInt(def, fd));
+                break;
+            case "short":
+            case "offset_short":
+                stream.writeShort(getFieldInt(def, fd));
+                break;
+            case "int":
+                stream.writeInt(getFieldInt(def, fd));
+                break;
+            case "big_smart":
+                stream.writeBigSmart(getFieldInt(def, fd));
+                break;
+            case "smart":
+                stream.writeSmart(getFieldInt(def, fd));
+                break;
+            case "string":
+                stream.writeString(getFieldString(def, fd));
+                break;
+            case "byte_times_5":
+                stream.writeByte(getFieldInt(def, fd) / 5);
+                break;
+            case "color_pairs": {
+                int[] orig = getField(def, "originalModelColors", int[].class);
+                int[] mod = getField(def, "modifiedModelColors", int[].class);
+                if (orig != null && mod != null && orig.length > 0) {
+                    stream.writeByte(orig.length);
+                    for (int i = 0; i < orig.length && i < mod.length; i++) {
+                        stream.writeShort(orig[i]);
+                        stream.writeShort(mod[i]);
+                    }
+                }
+                break;
+            }
+            case "texture_pairs": {
+                short[] orig = getField(def, "originalTextureIds", short[].class);
+                int[] mod = getField(def, "modifiedTextureIds", int[].class);
+                if (orig != null && mod != null && orig.length > 0) {
+                    stream.writeByte(orig.length);
+                    for (int i = 0; i < orig.length && i < mod.length; i++) {
+                        stream.writeShort(orig[i] & 0xFFFF);
+                        stream.writeShort(mod[i]);
+                    }
+                }
+                break;
+            }
+            case "byte_array": {
+                byte[] arr = getField(def, fd.field, byte[].class);
+                if (arr != null) {
+                    stream.writeByte(arr.length);
+                    for (byte b : arr) stream.writeByte(b);
+                }
+                break;
+            }
+            case "short_array": {
+                int[] arr = getField(def, fd.field, int[].class);
+                if (arr != null) {
+                    stream.writeByte(arr.length);
+                    for (int v : arr) stream.writeShort(v);
+                }
+                break;
+            }
+            case "params": {
+                java.util.Map<Integer, Object> params = getField(def, "itemParams", java.util.Map.class);
+                if (params != null && !params.isEmpty()) {
+                    stream.writeByte(params.size());
+                    params.forEach((key, value) -> {
+                        if (value instanceof String) {
+                            stream.writeByte(1);
+                            stream.write24BitInt(key);
+                            stream.writeString((String) value);
+                        } else {
+                            stream.writeByte(0);
+                            stream.write24BitInt(key);
+                            stream.writeInt((Integer) value);
+                        }
+                    });
+                }
+                break;
+            }
+            case "old_model_pair": {
+                stream.writeBigSmart(def.oldInvModel);
+                stream.writeBigSmart(def.oldInvZoom);
+                break;
+            }
+            case "old_recolor_pairs": {
+                if (def.oldModelColors != null) {
+                    stream.writeByte(def.oldModelColors.length);
+                    for (int i = 0; i < def.oldModelColors.length; i++) {
+                        stream.writeShort(def.oldModelColors[i]);
+                        stream.writeShort(def.oldModifiedModelColors[i]);
+                    }
+                }
+                break;
+            }
+            case "old_retexture_pairs": {
+                if (def.oldModelTextures != null) {
+                    stream.writeByte(def.oldModelTextures.length);
+                    for (int i = 0; i < def.oldModelTextures.length; i++) {
+                        stream.writeShort(def.oldModelTextures[i]);
+                        stream.writeShort(def.oldModifiedModelTextures[i]);
+                    }
+                }
+                break;
+            }
+            case "old_rotation_offsets": {
+                stream.writeShort(def.oldModelRotation1);
+                stream.writeShort(def.oldModelRotation2);
+                stream.writeShort(def.oldModelOffset1);
+                stream.writeShort(def.oldModelOffset2);
+                break;
+            }
+            case "skip_complex_44": {
+                stream.writeShort(0);
+                break;
+            }
+            case "skip_complex_45": {
+                stream.writeShort(0);
+                break;
+            }
+            case "skip_byte":
+                stream.writeByte(0);
+                break;
+            case "skip_short":
+                stream.writeShort(0);
+                break;
+            case "skip_2_shorts":
+                stream.writeShort(0); stream.writeShort(0);
+                break;
+            case "skip_2_bytes":
+                stream.writeByte(0); stream.writeByte(0);
+                break;
+            case "skip_3_bytes":
+                stream.writeByte(0); stream.writeByte(0); stream.writeByte(0);
+                break;
+            case "skip_4_bytes":
+                stream.writeByte(0); stream.writeByte(0); stream.writeByte(0); stream.writeByte(0);
+                break;
+            case "skip_6_shorts":
+                for (int i = 0; i < 6; i++) stream.writeShort(0);
+                break;
+            case "skip_12_bytes":
+                for (int i = 0; i < 12; i++) stream.writeByte(0);
+                break;
+            case "skip_byte_short":
+                stream.writeByte(0); stream.writeShort(0);
+                break;
+            case "skip_short_short":
+                stream.writeShort(0); stream.writeShort(0);
+                break;
+            case "skip_short_signed":
+                stream.writeShort(0);
+                break;
+            case "skip_4_shorts":
+                for (int i = 0; i < 4; i++) stream.writeShort(0);
+                break;
+            case "skip_big_smart":
+                stream.writeShort(0);
+                break;
+            case "skip":
+                break;
+            case "24bit_int":
+                stream.write24BitInt(getFieldInt(def, fd));
+                break;
+            case "byte_short_pair":
+                stream.writeByte(getFieldInt(def, fd));
+                if (fd.secondField != null) stream.writeShort(getFieldIntFromName(def, fd.secondField));
+                break;
+            default:
+                HANDLER.writeOpcodeValue(def, stream, opcode, 0);
+                break;
+        }
+    }
+
+    private static int getFieldInt(ItemDefinitions def, FieldDefinition fd) {
+        try {
+            java.lang.reflect.Field f = ItemDefinitions.class.getDeclaredField(fd.field);
+            f.setAccessible(true);
+            return f.getInt(def);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private static String getFieldString(ItemDefinitions def, FieldDefinition fd) {
+        try {
+            java.lang.reflect.Field f = ItemDefinitions.class.getDeclaredField(fd.field);
+            f.setAccessible(true);
+            Object val = f.get(def);
+            return val != null ? val.toString() : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T getFieldArray(ItemDefinitions def, FieldDefinition fd, Class<T> arrayClass) {
+        try {
+            java.lang.reflect.Field f = ItemDefinitions.class.getDeclaredField(fd.field);
+            f.setAccessible(true);
+            Object val = f.get(def);
+            if (arrayClass.isInstance(val)) return (T) val;
+        } catch (Exception e) { }
+        return null;
+    }
+
+    private static int getFieldIntFromName(ItemDefinitions def, String fieldName) {
+        try {
+            java.lang.reflect.Field f = ItemDefinitions.class.getDeclaredField(fieldName);
+            f.setAccessible(true);
+            return f.getInt(def);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T getField(ItemDefinitions def, String fieldName, Class<T> type) {
+        try {
+            java.lang.reflect.Field f = ItemDefinitions.class.getDeclaredField(fieldName);
+            f.setAccessible(true);
+            Object val = f.get(def);
+            if (type.isInstance(val)) return (T) val;
+        } catch (Exception e) { }
+        return null;
     }
 }

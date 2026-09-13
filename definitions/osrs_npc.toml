@@ -1,0 +1,67 @@
+# OSRS NPC definition opcodes
+# Based on rsmod NpcTypeDecoder
+# type: unsigned_byte, byte, unsigned_short, short, int, big_smart, smart, string, flag, flag_clear,
+#       color_pairs, texture_pairs, byte_array, params, model_array, head_model_array,
+#       skip, skip_byte, skip_short
+[233]
+1 = { field = "modelIds", type = "model_array" }
+2 = { field = "name", type = "string" }
+3 = { field = "description", type = "string" }
+12 = { field = "size", type = "unsigned_byte" }
+13 = { field = "standAnim", type = "unsigned_short" }
+14 = { field = "walkAnim", type = "unsigned_short" }
+15 = { field = "turnLeftAnim", type = "unsigned_short" }
+16 = { field = "turnRightAnim", type = "unsigned_short" }
+17 = { field = "", type = "skip_4_shorts" }
+18 = { field = "category", type = "unsigned_short" }
+30 = { field = "options", type = "string_array", index = 0 }
+31 = { field = "options", type = "string_array", index = 1 }
+32 = { field = "options", type = "string_array", index = 2 }
+33 = { field = "options", type = "string_array", index = 3 }
+34 = { field = "options", type = "string_array", index = 4 }
+40 = { field = "modelColors", type = "color_pairs" }
+41 = { field = "textureIds", type = "texture_pairs" }
+60 = { field = "headModelIds", type = "head_model_array" }
+74 = { field = "attackLevel", type = "unsigned_short" }
+75 = { field = "defenceLevel", type = "unsigned_short" }
+76 = { field = "strengthLevel", type = "unsigned_short" }
+77 = { field = "hitpoints", type = "unsigned_short" }
+78 = { field = "rangedLevel", type = "unsigned_short" }
+79 = { field = "magicLevel", type = "unsigned_short" }
+93 = { field = "visibleOnMinimap", type = "flag_clear" }
+95 = { field = "combatLevel", type = "unsigned_short" }
+97 = { field = "resizeH", type = "unsigned_short" }
+98 = { field = "resizeV", type = "unsigned_short" }
+99 = { field = "", type = "flag" }
+100 = { field = "", type = "skip_byte" }
+101 = { field = "", type = "skip_byte" }
+102 = { field = "headIcon", type = "unsigned_short" }
+103 = { field = "", type = "skip_short" }
+106 = { field = "", type = "skip_complex_106" }
+107 = { field = "", type = "flag_clear" }
+109 = { field = "", type = "flag_clear" }
+114 = { field = "", type = "skip_short" }
+115 = { field = "", type = "skip_4_shorts" }
+116 = { field = "", type = "skip_short" }
+117 = { field = "", type = "skip_4_shorts" }
+118 = { field = "", type = "skip_complex_118" }
+122 = { field = "", type = "flag" }
+123 = { field = "", type = "flag" }
+124 = { field = "", type = "skip_short" }
+200 = { field = "", type = "skip_byte" }
+201 = { field = "", type = "skip_byte" }
+202 = { field = "", type = "skip_byte" }
+203 = { field = "", type = "skip" }
+204 = { field = "", type = "skip_short" }
+205 = { field = "", type = "skip_byte" }
+206 = { field = "", type = "skip_byte" }
+207 = { field = "", type = "skip_byte" }
+208 = { field = "", type = "skip_byte" }
+210 = { field = "", type = "flag_clear" }
+211 = { field = "", type = "skip_short" }
+212 = { field = "", type = "skip_byte" }
+213 = { field = "", type = "skip_short" }
+214 = { field = "", type = "skip_short" }
+215 = { field = "", type = "skip_short" }
+216 = { field = "", type = "skip_short" }
+249 = { field = "params", type = "params" }

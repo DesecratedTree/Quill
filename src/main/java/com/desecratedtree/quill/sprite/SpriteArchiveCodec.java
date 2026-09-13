@@ -214,7 +214,7 @@ public final class SpriteArchiveCodec {
                 if (!paletteMap.containsKey(rgb24)) {
                     paletteMap.put(rgb24, paletteMap.size());
                     if (paletteMap.size() > 256) {
-                        throw new IllegalArgumentException("Sprite group uses more than 255 indexed colors.");
+            throw new IllegalArgumentException("Sprite group uses more than 256 indexed colors.");
                     }
                 }
             }

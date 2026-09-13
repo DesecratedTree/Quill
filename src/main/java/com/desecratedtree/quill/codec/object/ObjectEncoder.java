@@ -328,7 +328,7 @@ public final class ObjectEncoder {
     }
 
     private static void writeTransforms(ObjectDefinitions definition, OutputStream stream) {
-        if (definition.transforms == null || definition.transforms.length == 0) {
+        if (definition.transforms == null || definition.transforms.length < 2) {
             return;
         }
         boolean extended = definition.transformDefault != -1;

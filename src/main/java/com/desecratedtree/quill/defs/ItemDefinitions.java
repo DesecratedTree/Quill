@@ -3,10 +3,7 @@ package com.desecratedtree.quill.defs;
 import com.desecratedtree.quill.cache.CacheManager;
 import com.desecratedtree.quill.codec.InputStream;
 import com.desecratedtree.quill.util.RuntimeRevision;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @SuppressWarnings("unused")
 
@@ -246,6 +243,24 @@ public final class ItemDefinitions {
 
     public int unknownValue2;
 
+    public int cursor1Type;
+
+    public int cursor1Sprite;
+
+    public int cursor2Type;
+
+    public int cursor2Sprite;
+
+    public int op129Type;
+
+    public int op129Value;
+
+    public int op130Type;
+
+    public int op130Value;
+
+    public Set<Integer> presentOpcodeSet = new LinkedHashSet<>();
+
     public ItemDefinitions(int id, boolean load) {
         this.id = id;
         setDefaultsVariableValues();
@@ -308,10 +323,12 @@ public final class ItemDefinitions {
     }
 
     public final void readOpcodeValues(InputStream stream) {
+        presentOpcodeSet = new LinkedHashSet<>();
         while (true) {
             int opcode = stream.readUnsignedByte();
             if (opcode == 0)
                 break;
+            presentOpcodeSet.add(opcode);
             handler().read(this, stream, opcode);
         }
     }
@@ -647,6 +664,14 @@ public final class ItemDefinitions {
         oldFemaleEquip2 = -1;
         oldFemaleEquip3 = -1;
         oldEquipType = -1;
+        cursor1Type = 0;
+        cursor1Sprite = 0;
+        cursor2Type = 0;
+        cursor2Sprite = 0;
+        op129Type = 0;
+        op129Value = 0;
+        op130Type = 0;
+        op130Value = 0;
     }
 
     public void setValue(int value) {

@@ -1,0 +1,51 @@
+# OSRS Object (Loc) definition opcodes
+# Based on rsmod LocTypeDecoder
+# type: unsigned_byte, byte, unsigned_short, short, int, big_smart, smart, string, flag, flag_clear,
+#       color_pairs, texture_pairs, byte_array, params, skip, skip_byte, skip_short
+[233]
+1 = { field = "", type = "model_def" }
+2 = { field = "name", type = "string" }
+3 = { field = "description", type = "string" }
+5 = { field = "", type = "osrs_model_array_no_shape" }
+14 = { field = "sizeX", type = "unsigned_byte" }
+15 = { field = "sizeY", type = "unsigned_byte" }
+17 = { field = "", type = "object_props_17" }
+18 = { field = "blocksSky", type = "flag_clear" }
+19 = { field = "interactive", type = "unsigned_byte" }
+21 = { field = "contouredGround", type = "object_contour_21" }
+22 = { field = "delayShading", type = "flag" }
+23 = { field = "culling", type = "object_culling_23" }
+24 = { field = "animations", type = "single_animation" }
+27 = { field = "solid", type = "object_solid_27" }
+28 = { field = "offsetMultiplier", type = "object_offset_mult" }
+29 = { field = "brightness", type = "byte" }
+30 = { field = "options", type = "string_array", index = 0 }
+31 = { field = "options", type = "string_array", index = 1 }
+32 = { field = "options", type = "string_array", index = 2 }
+33 = { field = "options", type = "string_array", index = 3 }
+34 = { field = "options", type = "string_array", index = 4 }
+39 = { field = "contrast", type = "object_contrast" }
+40 = { field = "colours", type = "color_pairs" }
+41 = { field = "textureColours", type = "texture_pairs" }
+61 = { field = "", type = "skip_short" }
+62 = { field = "mirrored", type = "flag" }
+64 = { field = "castsShadow", type = "flag_clear" }
+65 = { field = "modelSizeX", type = "unsigned_short" }
+66 = { field = "modelSizeZ", type = "unsigned_short" }
+67 = { field = "modelSizeY", type = "unsigned_short" }
+68 = { field = "mapscene", type = "unsigned_short" }
+69 = { field = "blockFlag", type = "unsigned_byte" }
+70 = { field = "offsetX", type = "object_offset" }
+71 = { field = "offsetZ", type = "object_offset" }
+72 = { field = "offsetY", type = "object_offset" }
+73 = { field = "blocksLand", type = "flag" }
+74 = { field = "ignoreOnRoute", type = "flag" }
+75 = { field = "supportItems", type = "unsigned_byte" }
+77 = { field = "", type = "transforms" }
+78 = { field = "", type = "object_78" }
+79 = { field = "", type = "object_79" }
+81 = { field = "", type = "object_contour_81" }
+82 = { field = "hideMinimap", type = "flag" }
+89 = { field = "", type = "flag_clear" }
+92 = { field = "", type = "transforms_extended" }
+249 = { field = "params", type = "params" }

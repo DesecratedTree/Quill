@@ -54,7 +54,8 @@ public final class DefinitionHandler {
                     FieldDefinition fd = new FieldDefinition(
                             (String) def.get("field"),
                             (String) def.get("type"),
-                            def.containsKey("index") ? ((Number) def.get("index")).intValue() : -1
+                            def.containsKey("index") ? ((Number) def.get("index")).intValue() : -1,
+                            (String) def.get("secondField")
                     );
                     opcodeMap.put(opcode, fd);
                 } catch (NumberFormatException ignored) {}
@@ -308,6 +309,11 @@ public final class DefinitionHandler {
                     int[] arr = new int[len];
                     for (int i = 0; i < len; i++) arr[i] = stream.readUnsignedShort();
                     setField(def.field, arr, target);
+                    break;
+                }
+                case "byte_short_pair": {
+                    setFieldInt(def.field, stream.readUnsignedByte(), target);
+                    if (def.secondField != null) setFieldInt(def.secondField, stream.readUnsignedShort(), target);
                     break;
                 }
                 case "skip_complex_44": {
@@ -843,7 +849,11 @@ public final class DefinitionHandler {
                 stream.writeByte(((Number) target).intValue());
                 break;
             case "byte":
+                stream.writeByte(((Number) target).intValue());
+                break;
             case "byte_times_5":
+                stream.writeByte(((Number) target).intValue() / 5);
+                break;
             case "unsigned_short":
             case "offset_short":
                 stream.writeShort(((Number) target).intValue());
@@ -873,6 +883,28 @@ public final class DefinitionHandler {
                 }
                 break;
             }
+            case "byte_short_pair":
+                break;
+        }
+    }
+
+    public void writeMultiFieldData(Object target, OutputStream stream, FieldDefinition def) {
+        switch (def.type) {
+            case "byte_short_pair":
+                stream.writeByte(getFieldInt(def.field, target));
+                if (def.secondField != null) stream.writeShort(getFieldInt(def.secondField, target));
+                break;
+        }
+    }
+
+    private int getFieldInt(String fieldName, Object target) {
+        if (fieldName == null || fieldName.isEmpty()) return 0;
+        try {
+            java.lang.reflect.Field f = target.getClass().getDeclaredField(fieldName);
+            f.setAccessible(true);
+            return f.getInt(target);
+        } catch (Exception e) {
+            return 0;
         }
     }
 
@@ -903,10 +935,19 @@ public final class DefinitionHandler {
         public final String type;
 
         public final int index;
+
+        public final String secondField;
         FieldDefinition(String field, String type, int index) {
             this.field = field;
             this.type = type;
             this.index = index;
+            this.secondField = null;
+        }
+        FieldDefinition(String field, String type, int index, String secondField) {
+            this.field = field;
+            this.type = type;
+            this.index = index;
+            this.secondField = secondField;
         }
 
         @Override

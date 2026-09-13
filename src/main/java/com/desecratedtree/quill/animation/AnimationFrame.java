@@ -84,6 +84,11 @@ public final class AnimationFrame {
         if (frameId < 0) {
             return null;
         }
+        AnimationFrame cached = CACHE.get(frameId);
+        if (cached != null) {
+            return cached;
+        }
+        System.err.println("[NPC-ANIM] AnimationFrame.get: decoding frameId=0x" + Integer.toHexString(frameId) + " archive=" + (frameId >>> 16) + " file=" + (frameId & 0xFFFF));
         return CACHE.computeIfAbsent(frameId, AnimationFrame::decode);
     }
 
@@ -96,11 +101,14 @@ public final class AnimationFrame {
         int file = frameId & 0xFFFF;
         byte[] data = CacheManager.getIndexData(FRAME_INDEX, archive, file);
         if (data == null || data.length == 0) {
+            System.err.println("[NPC-ANIM] AnimationFrame.decode: NO DATA for frameId=0x" + Integer.toHexString(frameId) + " archive=" + archive + " file=" + file);
             return null;
         }
         InputStream stream = new InputStream(data);
         stream.setOffset(1);
-        AnimationBase base = AnimationBase.get(stream.readUnsignedShort());
+        int baseId = stream.readUnsignedShort();
+        AnimationBase base = AnimationBase.get(baseId);
+        System.err.println("[NPC-ANIM] AnimationFrame.decode: frameId=0x" + Integer.toHexString(frameId) + " baseId=" + baseId + " base=" + (base == null ? "null" : "ok(types=" + base.transformTypes.length + ")") + " dataLen=" + data.length);
         return base == null ? null : new AnimationFrame(data, base);
     }
 

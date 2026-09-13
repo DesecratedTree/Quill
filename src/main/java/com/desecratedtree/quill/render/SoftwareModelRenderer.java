@@ -51,7 +51,7 @@ public final class SoftwareModelRenderer {
         return renderInventorySprite(item, width, height, 0, 0, 0, 0, 0);
     }
 
-    public static BufferedImage renderInventorySprite(
+    private static BufferedImage renderInventorySprite(
             ItemDefinitions item,
             int width,
             int height,
@@ -108,6 +108,15 @@ public final class SoftwareModelRenderer {
         transform.rotateY14((effectiveY << 3) & 0x3FFF);
         transform.translate(translateX, translateY, translateZ);
         transform.rotateX14((effectiveX << 3) & 0x3FFF);
+        double[] vnx = new double[model.vertexCount];
+        double[] vny = new double[model.vertexCount];
+        double[] vnz = new double[model.vertexCount];
+        computeVertexNormals(model, scaledX, scaledY, scaledZ, vnx, vny, vnz);
+        double[] vBright = new double[model.vertexCount];
+        for (int i = 0; i < model.vertexCount; i++) {
+            double[] n = transform.applyRotation(new double[]{vnx[i], vny[i], vnz[i]});
+            vBright[i] = clamp(0.55 + n[0] * LIGHT_X + n[1] * LIGHT_Y + n[2] * LIGHT_Z, 0.28, 1.0);
+        }
         return renderFaces(
                 model,
                 scaledX,
@@ -120,7 +129,8 @@ public final class SoftwareModelRenderer {
                 centerX,
                 centerY,
                 focalLength,
-                transform::apply
+                transform::apply,
+                vBright
         );
     }
 
@@ -156,6 +166,16 @@ public final class SoftwareModelRenderer {
             centeredY[i] = (model.verticesY[i] - centerModelY) * fitScale;
             centeredZ[i] = (model.verticesZ[i] - centerModelZ) * fitScale;
         }
+        double[] vnx = new double[model.vertexCount];
+        double[] vny = new double[model.vertexCount];
+        double[] vnz = new double[model.vertexCount];
+        computeVertexNormals(model, centeredX, centeredY, centeredZ, vnx, vny, vnz);
+        double[] vBright = new double[model.vertexCount];
+        for (int i = 0; i < model.vertexCount; i++) {
+            double[] n = rotateY(vnx[i], vny[i], vnz[i], yawRadians);
+            n = rotateX(n[0], n[1], n[2], pitchRadians);
+            vBright[i] = clamp(0.55 + n[0] * LIGHT_X + n[1] * LIGHT_Y + n[2] * LIGHT_Z, 0.28, 1.0);
+        }
         return renderFaces(
                 model,
                 centeredX,
@@ -173,7 +193,8 @@ public final class SoftwareModelRenderer {
                     rotated = rotateX(rotated[0], rotated[1], rotated[2], pitchRadians);
                     rotated[2] += distance;
                     return rotated;
-                }
+                },
+                vBright
         );
     }
 
@@ -189,7 +210,8 @@ public final class SoftwareModelRenderer {
             double centerX,
             double centerY,
             double focalLength,
-            VertexTransformer transformer
+            VertexTransformer transformer,
+            double[] vBright
     ) {
         double[] viewX = new double[model.vertexCount];
         double[] viewY = new double[model.vertexCount];
@@ -210,7 +232,7 @@ public final class SoftwareModelRenderer {
         }
         BufferedImage raw = new BufferedImage(rawWidth, rawHeight, BufferedImage.TYPE_INT_ARGB);
         double[] depthBuffer = new double[rawWidth * rawHeight];
-        Arrays.fill(depthBuffer, Double.POSITIVE_INFINITY);
+        Arrays.fill(depthBuffer, Double.MAX_VALUE);
         List<PendingFace> translucentFaces = new ArrayList<>();
         for (int face = 0; face < model.faceCount; face++) {
             if (isNonSolidFace(model, face)) {
@@ -228,46 +250,42 @@ public final class SoftwareModelRenderer {
             if (cross >= 0.0) {
                 continue;
             }
-            double nx = (viewY[b] - viewY[a]) * (viewZ[c] - viewZ[a]) - (viewZ[b] - viewZ[a]) * (viewY[c] - viewY[a]);
-            double ny = (viewZ[b] - viewZ[a]) * (viewX[c] - viewX[a]) - (viewX[b] - viewX[a]) * (viewZ[c] - viewZ[a]);
-            double nz = (viewX[b] - viewX[a]) * (viewY[c] - viewY[a]) - (viewY[b] - viewY[a]) * (viewX[c] - viewX[a]);
-            double normalLength = Math.sqrt(nx * nx + ny * ny + nz * nz);
-            if (normalLength == 0.0) {
-                continue;
-            }
-            nx /= normalLength;
-            ny /= normalLength;
-            nz /= normalLength;
-            double brightness = clamp(0.55 + nx * LIGHT_X + ny * LIGHT_Y + nz * LIGHT_Z, 0.28, 1.0);
+            double faceBrightness = (vBright[a] + vBright[b] + vBright[c]) / 3.0;
             int alpha = faceAlpha(model.faceAlphas, face);
-            TexturedFill texturedFill = textureFill(model, face, brightness, alpha);
-            int color = texturedFill == null ? shadedFaceColor(model.faceColors, alpha, face, brightness) : 0;
+            TexturedFill texturedFill = textureFill(model, face, vBright[a], vBright[b], vBright[c], alpha);
+            int color1;
             if (alpha == 0) {
                 continue;
             }
+            if (texturedFill == null) {
+                int rawRgb = rawFaceColor(model.faceColors, face);
+                color1 = (alpha << 24) | (rawRgb & 0xFFFFFF);
+            } else {
+                color1 = 0;
+            }
             if (alpha < 255) {
+                int color;
+                if (texturedFill == null) {
+                    int rawRgb = rawFaceColor(model.faceColors, face);
+                    color = (alpha << 24) | (rawRgb & 0xFFFFFF);
+                } else {
+                    color = 0;
+                }
                 translucentFaces.add(new PendingFace(
-                        screenX[a],
-                        screenY[a],
-                        viewZ[a],
-                        screenX[b],
-                        screenY[b],
-                        viewZ[b],
-                        screenX[c],
-                        screenY[c],
-                        viewZ[c],
-                        color,
-                        texturedFill
+                        screenX[a], screenY[a], viewZ[a],
+                        screenX[b], screenY[b], viewZ[b],
+                        screenX[c], screenY[c], viewZ[c],
+                        color, texturedFill, vBright[a], vBright[b], vBright[c]
                 ));
                 continue;
             }
             rasterizeFace(raw, depthBuffer, screenX[a], screenY[a], viewZ[a], screenX[b], screenY[b], viewZ[b],
-                    screenX[c], screenY[c], viewZ[c], color, texturedFill, true);
+                    screenX[c], screenY[c], viewZ[c], color1, texturedFill, vBright[a], vBright[b], vBright[c], true);
         }
         translucentFaces.sort(Comparator.comparingDouble(PendingFace::averageDepth).reversed());
         for (PendingFace face : translucentFaces) {
             rasterizeFace(raw, depthBuffer, face.x1, face.y1, face.z1, face.x2, face.y2, face.z2, face.x3, face.y3,
-                    face.z3, face.argb, face.textureFill, false);
+                    face.z3, face.argb, face.textureFill, face.b1, face.b2, face.b3, false);
         }
         BufferedImage postProcessed = applyInventorySpritePostProcess(raw);
         if (rawWidth == width && rawHeight == height) {
@@ -363,7 +381,7 @@ public final class SoftwareModelRenderer {
             double z3,
             int argb
     ) {
-        rasterizeTriangle(image, depthBuffer, x1, y1, z1, x2, y2, z2, x3, y3, z3, argb, true);
+        rasterizeTriangle(image, depthBuffer, x1, y1, z1, x2, y2, z2, x3, y3, z3, argb, true, 1.0, 1.0, 1.0);
     }
 
     private static void rasterizeFace(
@@ -380,13 +398,16 @@ public final class SoftwareModelRenderer {
             double z3,
             int argb,
             TexturedFill textureFill,
+            double b1,
+            double b2,
+            double b3,
             boolean writeDepth
     ) {
         if (textureFill == null) {
-            rasterizeTriangle(image, depthBuffer, x1, y1, z1, x2, y2, z2, x3, y3, z3, argb, writeDepth);
+            rasterizeTriangle(image, depthBuffer, x1, y1, z1, x2, y2, z2, x3, y3, z3, argb, writeDepth, b1, b2, b3);
             return;
         }
-        rasterizeTexturedTriangle(image, depthBuffer, x1, y1, z1, x2, y2, z2, x3, y3, z3, textureFill, writeDepth);
+        rasterizeTexturedTriangle(image, depthBuffer, x1, y1, z1, x2, y2, z2, x3, y3, z3, textureFill, writeDepth, b1, b2, b3);
     }
 
     private static void rasterizeTriangle(
@@ -402,7 +423,10 @@ public final class SoftwareModelRenderer {
             int y3,
             double z3,
             int argb,
-            boolean writeDepth
+            boolean writeDepth,
+            double b1,
+            double b2,
+            double b3
     ) {
         int minX = Math.max(0, Math.min(x1, Math.min(x2, x3)));
         int maxX = Math.min(image.getWidth() - 1, Math.max(x1, Math.max(x2, x3)));
@@ -415,6 +439,11 @@ public final class SoftwareModelRenderer {
         if (area == 0.0) {
             return;
         }
+        int baseColor = argb;
+        int baseRed = (baseColor >> 16) & 0xFF;
+        int baseGreen = (baseColor >> 8) & 0xFF;
+        int baseBlue = baseColor & 0xFF;
+        int baseAlpha = (baseColor >>> 24) & 0xFF;
         for (int y = minY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
                 double sampleX = x + 0.5;
@@ -430,11 +459,16 @@ public final class SoftwareModelRenderer {
                 if (depth >= depthBuffer[index]) {
                     continue;
                 }
+                double b = b1 * w1 + b2 * w2 + b3 * w3;
+                int r = applyBrightness(baseRed, b);
+                int g = applyBrightness(baseGreen, b);
+                int bl = applyBrightness(baseBlue, b);
+                int color = (baseAlpha << 24) | (r << 16) | (g << 8) | bl;
                 if (writeDepth) {
                     depthBuffer[index] = depth;
-                    image.setRGB(x, y, argb);
+                    image.setRGB(x, y, color);
                 } else {
-                    image.setRGB(x, y, blend(argb, image.getRGB(x, y)));
+                    image.setRGB(x, y, blend(color, image.getRGB(x, y)));
                 }
             }
         }
@@ -453,7 +487,10 @@ public final class SoftwareModelRenderer {
             int y3,
             double z3,
             TexturedFill fill,
-            boolean writeDepth
+            boolean writeDepth,
+            double b1,
+            double b2,
+            double b3
     ) {
         int minX = Math.max(0, Math.min(x1, Math.min(x2, x3)));
         int maxX = Math.min(image.getWidth() - 1, Math.max(x1, Math.max(x2, x3)));
@@ -488,7 +525,8 @@ public final class SoftwareModelRenderer {
                 if (depth >= depthBuffer[index]) {
                     continue;
                 }
-                int argb = sampleTexture(fill, w1, w2, w3, invZ1, invZ2, invZ3, invDepth);
+                double b = b1 * w1 + b2 * w2 + b3 * w3;
+                int argb = sampleTexture(fill, w1, w2, w3, invZ1, invZ2, invZ3, invDepth, b);
                 if (((argb >>> 24) & 0xFF) == 0) {
                     continue;
                 }
@@ -518,6 +556,11 @@ public final class SoftwareModelRenderer {
         return (alpha << 24) | (red << 16) | (green << 8) | blue;
     }
 
+    private static int rawFaceColor(short[] faceColors, int index) {
+        int packed = faceColors != null && index < faceColors.length ? faceColors[index] & 0xFFFF : 0;
+        return CacheColor.toRgb(packed);
+    }
+
     private static int faceAlpha(int[] faceAlphas, int index) {
         if (faceAlphas != null && index < faceAlphas.length) {
             return 255 - (faceAlphas[index] & 0xFF);
@@ -525,7 +568,7 @@ public final class SoftwareModelRenderer {
         return 255;
     }
 
-    private static TexturedFill textureFill(RenderModel model, int face, double brightness, int alpha) {
+    private static TexturedFill textureFill(RenderModel model, int face, double b1, double b2, double b3, int alpha) {
         if (model.faceTextures == null || face >= model.faceTextures.length) {
             return null;
         }
@@ -543,7 +586,7 @@ public final class SoftwareModelRenderer {
         TextureUvMapper.UvTriangle uv = TextureUvMapper.map(model, face);
         return new TexturedFill(
                 texture,
-                brightness,
+                b1, b2, b3,
                 alpha,
                 uv.u1,
                 uv.v1,
@@ -589,7 +632,8 @@ public final class SoftwareModelRenderer {
             double invZ1,
             double invZ2,
             double invZ3,
-            double invDepth
+            double invDepth,
+            double brightness
     ) {
         double u = (fill.u1 * w1 * invZ1 + fill.u2 * w2 * invZ2 + fill.u3 * w3 * invZ3) / invDepth + fill.scrollU;
         double v = (fill.v1 * w1 * invZ1 + fill.v2 * w2 * invZ2 + fill.v3 * w3 * invZ3) / invDepth + fill.scrollV;
@@ -599,9 +643,9 @@ public final class SoftwareModelRenderer {
         int textureY = Math.min(fill.image.getHeight() - 1, Math.max(0, (int) Math.floor(v * fill.image.getHeight())));
         int texel = fill.image.getRGB(textureX, textureY);
         int alpha = ((texel >>> 24) & 0xFF) * fill.alpha / 255;
-        int red = applyBrightness((texel >> 16) & 0xFF, fill.brightness);
-        int green = applyBrightness((texel >> 8) & 0xFF, fill.brightness);
-        int blue = applyBrightness(texel & 0xFF, fill.brightness);
+        int red = applyBrightness((texel >> 16) & 0xFF, brightness);
+        int green = applyBrightness((texel >> 8) & 0xFF, brightness);
+        int blue = applyBrightness(texel & 0xFF, brightness);
         return (alpha << 24) | (red << 16) | (green << 8) | blue;
     }
 
@@ -657,6 +701,31 @@ public final class SoftwareModelRenderer {
 
     private interface VertexTransformer {
         double[] apply(double[] point);
+    }
+
+    private static void computeVertexNormals(RenderModel model, double[] baseX, double[] baseY, double[] baseZ,
+                                              double[] outNX, double[] outNY, double[] outNZ) {
+        for (int face = 0; face < model.faceCount; face++) {
+            if (isNonSolidFace(model, face)) continue;
+            int a = model.faceA[face];
+            int b = model.faceB[face];
+            int c = model.faceC[face];
+            double abx = baseX[b] - baseX[a], aby = baseY[b] - baseY[a], abz = baseZ[b] - baseZ[a];
+            double acx = baseX[c] - baseX[a], acy = baseY[c] - baseY[a], acz = baseZ[c] - baseZ[a];
+            double nx = aby * acz - abz * acy;
+            double ny = abz * acx - abx * acz;
+            double nz = abx * acy - aby * acx;
+            double len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            if (len == 0.0) continue;
+            nx /= len; ny /= len; nz /= len;
+            outNX[a] += nx; outNY[a] += ny; outNZ[a] += nz;
+            outNX[b] += nx; outNY[b] += ny; outNZ[b] += nz;
+            outNX[c] += nx; outNY[c] += ny; outNZ[c] += nz;
+        }
+        for (int i = 0; i < model.vertexCount; i++) {
+            double len = Math.sqrt(outNX[i] * outNX[i] + outNY[i] * outNY[i] + outNZ[i] * outNZ[i]);
+            if (len > 0.0) { outNX[i] /= len; outNY[i] /= len; outNZ[i] /= len; }
+        }
     }
 
     private static final class ClientTransform {
@@ -755,6 +824,17 @@ public final class SoftwareModelRenderer {
                     aFloat5681 + (aFloat5680 * y + x * aFloat5662 + z * aFloat5664)
             };
         }
+
+        private double[] applyRotation(double[] normal) {
+            double x = normal[0];
+            double y = normal[1];
+            double z = normal[2];
+            return new double[]{
+                    z * aFloat5669 + (aFloat5673 * y + x * aFloat5672),
+                    x * aFloat5655 + y * aFloat5678 + z * aFloat5666,
+                    aFloat5680 * y + x * aFloat5662 + z * aFloat5664
+            };
+        }
     }
 
     private static double clientAngle14ToRadians(int value) {
@@ -785,6 +865,12 @@ public final class SoftwareModelRenderer {
 
         private final TexturedFill textureFill;
 
+        private final double b1;
+
+        private final double b2;
+
+        private final double b3;
+
         private PendingFace(
                 int x1,
                 int y1,
@@ -809,6 +895,74 @@ public final class SoftwareModelRenderer {
             this.z3 = z3;
             this.argb = argb;
             this.textureFill = textureFill;
+            this.b1 = 1.0;
+            this.b2 = 1.0;
+            this.b3 = 1.0;
+        }
+
+        private PendingFace(
+                int x1,
+                int y1,
+                double z1,
+                int x2,
+                int y2,
+                double z2,
+                int x3,
+                int y3,
+                double z3,
+                int argb,
+                TexturedFill textureFill,
+                double b1,
+                double b2,
+                double b3
+        ) {
+            this.x1 = x1;
+            this.y1 = y1;
+            this.z1 = z1;
+            this.x2 = x2;
+            this.y2 = y2;
+            this.z2 = z2;
+            this.x3 = x3;
+            this.y3 = y3;
+            this.z3 = z3;
+            this.argb = argb;
+            this.textureFill = textureFill;
+            this.b1 = b1;
+            this.b2 = b2;
+            this.b3 = b3;
+        }
+
+        private PendingFace(
+                int x1,
+                int y1,
+                double z1,
+                int x2,
+                int y2,
+                double z2,
+                int x3,
+                int y3,
+                double z3,
+                int argb,
+                TexturedFill textureFill,
+                int face,
+                int alpha,
+                short[] faceColors,
+                double[] vBright
+        ) {
+            this.x1 = x1;
+            this.y1 = y1;
+            this.z1 = z1;
+            this.x2 = x2;
+            this.y2 = y2;
+            this.z2 = z2;
+            this.x3 = x3;
+            this.y3 = y3;
+            this.z3 = z3;
+            this.argb = argb;
+            this.textureFill = null;
+            this.b1 = vBright[face];
+            this.b2 = vBright[face];
+            this.b3 = vBright[face];
         }
 
         private double averageDepth() {
@@ -819,8 +973,6 @@ public final class SoftwareModelRenderer {
     private static final class TexturedFill {
 
         private final BufferedImage image;
-
-        private final double brightness;
 
         private final int alpha;
 
@@ -842,7 +994,9 @@ public final class SoftwareModelRenderer {
 
         private TexturedFill(
                 BufferedImage image,
-                double brightness,
+                double b1,
+                double b2,
+                double b3,
                 int alpha,
                 float u1,
                 float v1,
@@ -854,7 +1008,6 @@ public final class SoftwareModelRenderer {
                 double scrollV
         ) {
             this.image = image;
-            this.brightness = brightness;
             this.alpha = alpha;
             this.u1 = u1;
             this.v1 = v1;

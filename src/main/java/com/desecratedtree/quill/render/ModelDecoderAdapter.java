@@ -118,6 +118,9 @@ public final class ModelDecoderAdapter {
         }
         RenderAnimationDefinitions renderAnimation = RenderAnimationDefinitions.get(renderAnimId);
         SequenceDefinitions idleSequence = renderAnimation == null ? null : SequenceDefinitions.get(renderAnimation.idleSequenceId);
+        int frameId = idleSequence == null ? -1 : idleSequence.primaryFrameId(sequenceFrameIndex);
+        AnimationFrame animFrame = idleSequence == null ? null : AnimationFrame.get(frameId);
+        System.err.println("[NPC-ANIM] loadNpcModel: npc=" + npc.id + " renderAnimId=" + renderAnimId + " renderAnimation=" + (renderAnimation == null ? "null" : "ok") + " idleSeqId=" + (renderAnimation == null ? -1 : renderAnimation.idleSequenceId) + " idleSequence=" + (idleSequence == null ? "null" : "ok(frameIds=" + idleSequence.frameIds.length + ")") + " frameIndex=" + sequenceFrameIndex + " frameId=0x" + Integer.toHexString(frameId) + " animFrame=" + (animFrame == null ? "null" : "ok"));
         return loadCompositeModel(
                 npc.id,
                 modelIds,
@@ -127,7 +130,7 @@ public final class ModelDecoderAdapter {
                 npc.modifiedTextureIds,
                 npc.modelTranslations,
                 renderAnimation == null ? null : renderAnimation.modelTransforms,
-                idleSequence == null ? null : AnimationFrame.get(idleSequence.primaryFrameId(sequenceFrameIndex)),
+                animFrame,
                 npc.resizeX,
                 npc.resizeY,
                 npc.resizeX,
@@ -181,8 +184,10 @@ public final class ModelDecoderAdapter {
 
     private static void applyAnimationFrame(Model model, AnimationFrame frame) {
         if (frame == null || model.getVertexSkins() == null) {
+            System.err.println("[NPC-ANIM] applyAnimationFrame: SKIPPED frame=" + (frame == null ? "null" : "ok") + " vertexSkins=" + (model.getVertexSkins() == null ? "null" : "ok(len=" + model.getVertexSkins().length + ")") + " vertexCount=" + model.getVertexCount());
             return;
         }
+        System.err.println("[NPC-ANIM] applyAnimationFrame: APPLYING frame baseId=" + frame.base.id + " transforms=" + frame.transformIndices.length);
         int[] xs = model.getVertexPositionsX();
         int[] ys = model.getVertexPositionsY();
         int[] zs = model.getVertexPositionsZ();

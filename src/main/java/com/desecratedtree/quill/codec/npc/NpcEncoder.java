@@ -91,6 +91,22 @@ public final class NpcEncoder {
         if (def.renderAnimId >= 0) {
             HANDLER.writeOpcodeValue(def, stream, 127, def.renderAnimId);
         }
+        if (def.params != null && !def.params.isEmpty()) {
+            stream.writeByte(249);
+            stream.writeByte(def.params.size());
+            for (java.util.Map.Entry<Integer, Object> entry : def.params.entrySet()) {
+                Object value = entry.getValue();
+                if (value instanceof String) {
+                    stream.writeByte(1);
+                    stream.write24BitInt(entry.getKey());
+                    stream.writeString((String) value);
+                } else {
+                    stream.writeByte(0);
+                    stream.write24BitInt(entry.getKey());
+                    stream.writeInt(value instanceof Number ? ((Number) value).intValue() : 0);
+                }
+            }
+        }
         stream.writeByte(0);
         return stream.toByteArray();
     }

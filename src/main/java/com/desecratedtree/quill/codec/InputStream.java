@@ -72,7 +72,7 @@ public final class InputStream extends Stream {
 
     public void addBytes(byte[] b, int offset, int length) {
         checkCapacity(length - offset);
-        System.arraycopy(b, offset, buffer, this.offset, length);
+        System.arraycopy(b, offset, buffer, this.offset, length - offset);
         this.length += length - offset;
     }
 

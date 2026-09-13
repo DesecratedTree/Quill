@@ -1,0 +1,19 @@
+[634]
+1 = { field = "", type = "sequence_frames" }
+2 = { field = "", type = "skip_short" }
+3 = { field = "", type = "skip_complex_3" }
+5 = { field = "", type = "skip_byte" }
+6 = { field = "", type = "skip_short" }
+7 = { field = "", type = "skip_short" }
+8 = { field = "", type = "skip_byte" }
+9 = { field = "", type = "skip_byte" }
+10 = { field = "", type = "skip_byte" }
+11 = { field = "", type = "skip_byte" }
+12 = { field = "", type = "sequence_secondary_frames" }
+13 = { field = "", type = "skip_sequence_13" }
+14 = { field = "", type = "skip" }
+15 = { field = "", type = "skip" }
+16 = { field = "", type = "skip" }
+18 = { field = "", type = "skip" }
+19 = { field = "", type = "skip_2_bytes" }
+20 = { field = "", type = "skip_sequence_20" }

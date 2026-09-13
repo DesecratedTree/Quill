@@ -1,0 +1,67 @@
+# OSRS Item (Obj) definition opcodes
+# Based on rsmod ObjTypeDecoder
+# type: unsigned_byte, byte, unsigned_short, short, int, big_smart, smart, string, flag, flag_clear,
+#       color_pairs, texture_pairs, byte_array, params, skip, skip_byte, skip_short
+[233]
+1 = { field = "modelId", type = "unsigned_short" }
+2 = { field = "name", type = "string" }
+3 = { field = "description", type = "string" }
+4 = { field = "modelZoom", type = "unsigned_short" }
+5 = { field = "modelRotation1", type = "unsigned_short" }
+6 = { field = "modelRotation2", type = "unsigned_short" }
+7 = { field = "modelOffset1", type = "offset_short" }
+8 = { field = "modelOffset2", type = "offset_short" }
+11 = { field = "stackable", type = "flag" }
+12 = { field = "value", type = "int" }
+13 = { field = "equipSlot", type = "unsigned_byte" }
+14 = { field = "equipType", type = "unsigned_byte" }
+16 = { field = "membersOnly", type = "flag" }
+23 = { field = "maleEquip1", type = "unsigned_short" }
+24 = { field = "maleEquip2", type = "unsigned_short" }
+25 = { field = "femaleEquip1", type = "unsigned_short" }
+26 = { field = "femaleEquip2", type = "unsigned_short" }
+27 = { field = "", type = "skip_byte" }
+30 = { field = "groundOptions", type = "string_array", index = 0 }
+31 = { field = "groundOptions", type = "string_array", index = 1 }
+32 = { field = "groundOptions", type = "string_array", index = 2 }
+33 = { field = "groundOptions", type = "string_array", index = 3 }
+34 = { field = "groundOptions", type = "string_array", index = 4 }
+35 = { field = "inventoryOptions", type = "string_array", index = 0 }
+36 = { field = "inventoryOptions", type = "string_array", index = 1 }
+37 = { field = "inventoryOptions", type = "string_array", index = 2 }
+38 = { field = "inventoryOptions", type = "string_array", index = 3 }
+39 = { field = "inventoryOptions", type = "string_array", index = 4 }
+40 = { field = "modelColors", type = "color_pairs" }
+41 = { field = "textureIds", type = "texture_pairs" }
+42 = { field = "", type = "skip_byte" }
+65 = { field = "", type = "flag" }
+75 = { field = "weight", type = "short" }
+78 = { field = "maleEquipModelId3", type = "unsigned_short" }
+79 = { field = "femaleEquipModelId3", type = "unsigned_short" }
+90 = { field = "", type = "skip_short" }
+91 = { field = "", type = "skip_short" }
+92 = { field = "", type = "skip_short" }
+93 = { field = "", type = "skip_short" }
+94 = { field = "", type = "skip_short" }
+95 = { field = "", type = "skip_short" }
+97 = { field = "certId", type = "unsigned_short" }
+98 = { field = "certTemplateId", type = "unsigned_short" }
+100 = { field = "stackIds", type = "stack_variant", index = 0 }
+101 = { field = "stackIds", type = "stack_variant", index = 1 }
+102 = { field = "stackIds", type = "stack_variant", index = 2 }
+103 = { field = "stackIds", type = "stack_variant", index = 3 }
+104 = { field = "stackIds", type = "stack_variant", index = 4 }
+105 = { field = "stackIds", type = "stack_variant", index = 5 }
+106 = { field = "stackIds", type = "stack_variant", index = 6 }
+107 = { field = "stackIds", type = "stack_variant", index = 7 }
+108 = { field = "stackIds", type = "stack_variant", index = 8 }
+109 = { field = "stackIds", type = "stack_variant", index = 9 }
+110 = { field = "resizeX", type = "unsigned_short" }
+111 = { field = "resizeY", type = "unsigned_short" }
+112 = { field = "resizeZ", type = "unsigned_short" }
+113 = { field = "", type = "skip_byte" }
+114 = { field = "", type = "skip_byte" }
+115 = { field = "", type = "skip_byte" }
+139 = { field = "", type = "skip_short" }
+140 = { field = "", type = "skip_short" }
+249 = { field = "params", type = "params" }

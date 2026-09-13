@@ -311,7 +311,7 @@ public final class SpriteEditorFrame extends JFrame {
         for (BufferedImage image : images) {
             currentArchive.sprites.add(SpriteArchiveCodec.fromBufferedImage(image));
         }
-        saveCurrentGroup(images);
+        saveCurrentGroup(finalImages);
     }
 
     private void replaceSelectedSprite() {

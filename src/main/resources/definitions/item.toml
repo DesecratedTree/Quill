@@ -70,10 +70,10 @@
 124 = { field = "", type = "skip_6_shorts" }
 125 = { field = "", type = "skip_3_bytes" }
 126 = { field = "", type = "skip_3_bytes" }
-127 = { field = "", type = "skip_byte_short" }
-128 = { field = "", type = "skip_byte_short" }
-129 = { field = "", type = "skip_byte_short" }
-130 = { field = "", type = "skip_byte_short" }
+127 = { field = "cursor1Type", type = "byte_short_pair", secondField = "cursor1Sprite" }
+128 = { field = "cursor2Type", type = "byte_short_pair", secondField = "cursor2Sprite" }
+129 = { field = "op129Type", type = "byte_short_pair", secondField = "op129Value" }
+130 = { field = "op130Type", type = "byte_short_pair", secondField = "op130Value" }
 132 = { field = "unknownArray2", type = "short_array" }
 134 = { field = "", type = "skip_byte" }
 139 = { field = "unknownValue2", type = "unsigned_short" }

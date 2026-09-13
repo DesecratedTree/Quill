@@ -583,10 +583,10 @@ public class ItemEditorPanel extends JPanel {
         current.stackable = stackable.isSelected() ? 1 : 0;
         current.membersOnly = members.isSelected();
         current.inventoryOptions = Arrays.stream(inventoryOptionsArea.getText().split("\n"))
-                .map(s -> s.equalsIgnoreCase("(None)") ? "" : capitalizeFirstLetter(s.toLowerCase()))
+                .map(s -> s.equalsIgnoreCase("(None)") || s.trim().isEmpty() ? null : capitalizeFirstLetter(s.toLowerCase()))
                 .toArray(String[]::new);
         current.groundOptions = Arrays.stream(groundOptionsArea.getText().split("\n"))
-                .map(s -> s.equalsIgnoreCase("(None)") ? "" : capitalizeFirstLetter(s.toLowerCase()))
+                .map(s -> s.equalsIgnoreCase("(None)") || s.trim().isEmpty() ? null : capitalizeFirstLetter(s.toLowerCase()))
                 .toArray(String[]::new);
         String selectedSlot = (String) equipSlot.getSelectedItem();
         current.equipSlot = -1;
@@ -624,6 +624,37 @@ public class ItemEditorPanel extends JPanel {
         } else {
             current.stackIds = null;
             current.stackAmounts = null;
+        }
+        if (current.stackable == 1) current.presentOpcodeSet.add(11);
+        else current.presentOpcodeSet.remove(11);
+        if (current.membersOnly) current.presentOpcodeSet.add(16);
+        else current.presentOpcodeSet.remove(16);
+        if (current.unnoted) current.presentOpcodeSet.add(65);
+        else current.presentOpcodeSet.remove(65);
+        if (current.groundOptions != null) {
+            for (int i = 0; i < Math.min(5, current.groundOptions.length); i++) {
+                if (current.groundOptions[i] != null && !current.groundOptions[i].isEmpty()) {
+                    current.presentOpcodeSet.add(30 + i);
+                } else {
+                    current.presentOpcodeSet.remove(30 + i);
+                }
+            }
+        }
+        if (current.inventoryOptions != null) {
+            for (int i = 0; i < Math.min(5, current.inventoryOptions.length); i++) {
+                if (current.inventoryOptions[i] != null && !current.inventoryOptions[i].isEmpty()) {
+                    current.presentOpcodeSet.add(35 + i);
+                } else {
+                    current.presentOpcodeSet.remove(35 + i);
+                }
+            }
+        }
+        for (int i = 0; i < 10; i++) {
+            if (current.stackIds != null && i < current.stackIds.length && current.stackIds[i] > 0) {
+                current.presentOpcodeSet.add(100 + i);
+            } else {
+                current.presentOpcodeSet.remove(100 + i);
+            }
         }
         ItemSaver.save(current);
         int savedId = current.id;

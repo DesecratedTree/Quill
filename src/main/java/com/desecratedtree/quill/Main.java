@@ -22,5 +22,7 @@ public class Main {
 
     private static void configureLookAndFeel() {
         FlatMacDarkLaf.setup();
+        com.desecratedtree.quill.ui.UiStyles.configureDefaults();
+        javax.swing.UIManager.getLookAndFeelDefaults().put("defaultFont", new java.awt.Font("Dialog", java.awt.Font.PLAIN, 13));
     }
 }

@@ -3,6 +3,7 @@ package com.desecratedtree.quill.ui.item;
 import com.desecratedtree.quill.cache.CacheManager;
 import com.desecratedtree.quill.defs.ItemDefinitions;
 import com.desecratedtree.quill.ui.component.SimpleDocumentListener;
+import com.desecratedtree.quill.ui.UiStyles;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -87,13 +88,14 @@ public class ItemListPanel extends JPanel {
     }
 
     public ItemListPanel() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(0, 8));
         setPreferredSize(new Dimension(250, 600));
+        setBackground(UiStyles.SURFACE_RAISED);
         reloadData();
         searchField.setToolTipText("Search by name or ID");
         add(searchField, BorderLayout.NORTH);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.setRowHeight(20);
+        UiStyles.styleTable(table);
         table.setShowGrid(false);
         table.setIntercellSpacing(new Dimension(0, 0));
         table.getTableHeader().setReorderingAllowed(false);
@@ -125,7 +127,9 @@ public class ItemListPanel extends JPanel {
                 showContextMenu(e);
             }
         });
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        JScrollPane tableScroll = new JScrollPane(table);
+        UiStyles.styleScrollPane(tableScroll);
+        add(tableScroll, BorderLayout.CENTER);
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
 
             private void trigger() {

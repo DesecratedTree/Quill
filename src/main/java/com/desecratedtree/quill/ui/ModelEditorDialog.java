@@ -31,6 +31,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
 public final class ModelEditorDialog extends JDialog {
 
@@ -70,6 +72,8 @@ public final class ModelEditorDialog extends JDialog {
 
     private final JTextField textureSpeedField = new JTextField("0", 6);
 
+    private final JTextArea textureMappingInfo = new JTextArea(8, 34);
+
     private final JPanel recentTexturePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
 
     private final DefaultListModel<String> emitterListModel = new DefaultListModel<>();
@@ -94,22 +98,41 @@ public final class ModelEditorDialog extends JDialog {
 
     private int selectedFace = -1;
 
+    private final LinkedHashSet<Integer> selectedFaces = new LinkedHashSet<>();
+
+    private int activeTextureId = -1;
+
+    private int activeTextureDirection;
+
+    private int activeTextureSpeed;
+
+    /** Texture-triangle mapping used by the active swatch; multiple faces can share it. */
+    private int activeTextureCoordinate = -1;
+
     private ModelEditorDialog(Window owner, int modelId, String title, Runnable onSave) {
         super(owner, title, ModalityType.MODELESS);
         this.onSave = onSave;
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(8, 8));
-        ((JComponent) getContentPane()).setBorder(new EmptyBorder(8, 8, 8, 8));
+        ((JComponent) getContentPane()).setBorder(new EmptyBorder(14, 14, 14, 14));
+        getContentPane().setBackground(UiStyles.SURFACE_SUBTLE);
 
         viewer.setPreferredSize(new Dimension(680, 520));
         viewer.setFaceInteractionListener((face, clickCount) -> {
             selectedFace = face;
-            viewer.setSelectedFace(face);
+            selectedFaces.clear();
+            selectedFaces.addAll(viewer.getSelectedFaces());
             updateFaceInfo();
             if (clickCount >= 2) {
                 applySelectedTool();
             }
+        });
+        viewer.setSelectionChangedListener(() -> {
+            selectedFace = viewer.getSelectedFace();
+            selectedFaces.clear();
+            selectedFaces.addAll(viewer.getSelectedFaces());
+            updateFaceInfo();
         });
 
         add(buildModelListPanel(), BorderLayout.WEST);
@@ -144,6 +167,7 @@ public final class ModelEditorDialog extends JDialog {
     private JPanel buildModelListPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
         panel.setPreferredSize(new Dimension(180, 520));
+        UiStyles.styleCard(panel);
         panel.setBorder(BorderFactory.createTitledBorder("Models"));
 
         modelList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -227,6 +251,13 @@ public final class ModelEditorDialog extends JDialog {
     private JPanel buildTexturePanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
 
+        textureMappingInfo.setEditable(false);
+        textureMappingInfo.setFocusable(false);
+        textureMappingInfo.setLineWrap(true);
+        textureMappingInfo.setWrapStyleWord(true);
+        textureMappingInfo.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        textureMappingInfo.setBackground(UIManager.getColor("Panel.background"));
+
         textureList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         textureList.setFixedCellHeight(40);
         textureList.setCellRenderer(new TextureCellRenderer());
@@ -234,7 +265,7 @@ public final class ModelEditorDialog extends JDialog {
             if (!e.getValueIsAdjusting()) {
                 Integer selected = textureList.getSelectedValue();
                 if (selected != null) {
-                    textureIdField.setText(String.valueOf(selected));
+                    activateTexture(selected);
                 }
             }
         });
@@ -267,13 +298,13 @@ public final class ModelEditorDialog extends JDialog {
 
         c.gridx = 0;
         c.gridy = 1;
-        form.add(new JLabel("Direction:"), c);
+        form.add(new JLabel("Animation U:"), c);
         c.gridx = 1;
         form.add(textureDirectionField, c);
 
         c.gridx = 0;
         c.gridy = 2;
-        form.add(new JLabel("Speed:"), c);
+        form.add(new JLabel("Animation V:"), c);
         c.gridx = 1;
         form.add(textureSpeedField, c);
 
@@ -299,7 +330,15 @@ public final class ModelEditorDialog extends JDialog {
 
         top.add(form, BorderLayout.NORTH);
         top.add(recentPanel, BorderLayout.CENTER);
-        panel.add(top, BorderLayout.NORTH);
+
+        JPanel mappingPanel = new JPanel(new BorderLayout());
+        mappingPanel.setBorder(BorderFactory.createTitledBorder("Client Texture Mapping"));
+        mappingPanel.add(textureMappingInfo, BorderLayout.CENTER);
+
+        JPanel header = new JPanel(new BorderLayout(6, 6));
+        header.add(top, BorderLayout.CENTER);
+        header.add(mappingPanel, BorderLayout.SOUTH);
+        panel.add(header, BorderLayout.NORTH);
         panel.add(new JScrollPane(textureList), BorderLayout.CENTER);
         return panel;
     }
@@ -417,6 +456,11 @@ public final class ModelEditorDialog extends JDialog {
         modelId = nextModelId;
         model = next;
         selectedFace = -1;
+        selectedFaces.clear();
+        activeTextureId = -1;
+        activeTextureDirection = 0;
+        activeTextureSpeed = 0;
+        activeTextureCoordinate = -1;
         setTitle("Model " + modelId + " Editor");
         refreshViewer();
         refreshLists();
@@ -588,7 +632,9 @@ public final class ModelEditorDialog extends JDialog {
         if (!ensureFaceSelected()) {
             return;
         }
-        model.setFaceColor(selectedFace, parseNumber(colorField.getText(), 0));
+        for (int face : selectedFacesForEditing()) {
+            model.setFaceColor(face, parseNumber(colorField.getText(), 0));
+        }
         refreshViewer();
         updateFaceInfo();
     }
@@ -597,11 +643,28 @@ public final class ModelEditorDialog extends JDialog {
         if (!ensureFaceSelected()) {
             return;
         }
-        int textureId = parseNumber(textureIdField.getText(), -1);
-        model.setFaceTexture(selectedFace, textureId);
-        model.setFaceTextureDirectionAndSpeed(selectedFace,
-                parseNumber(textureDirectionField.getText(), 0),
-                parseNumber(textureSpeedField.getText(), 0));
+        int textureId = activeTextureId >= 0 ? activeTextureId : parseNumber(textureIdField.getText(), -1);
+        int direction = activeTextureId >= 0 ? activeTextureDirection : parseNumber(textureDirectionField.getText(), 0);
+        int speed = activeTextureId >= 0 ? activeTextureSpeed : parseNumber(textureSpeedField.getText(), 0);
+        int mappingCoordinate = activeTextureCoordinate;
+        for (int face : selectedFacesForEditing()) {
+            if (mappingCoordinate >= 0) {
+                model.setFaceTextureAtCoordinate(face, textureId, mappingCoordinate);
+            } else {
+                // Create one client texture triangle for the first painted face,
+                // then point every other selected face at that same triangle.
+                model.setFaceTexture(face, textureId);
+                mappingCoordinate = textureCoordinateForFace(face);
+            }
+        }
+        activeTextureCoordinate = mappingCoordinate;
+        // Direction and speed are material animation values. The model's
+        // complex-texture arrays contain projection parameters (the speed-like
+        // value may be 11989), not the material scroll rate. Keep the source
+        // texture triangle unchanged when painting.
+        textureIdField.setText(String.valueOf(textureId));
+        textureDirectionField.setText(String.valueOf(direction));
+        textureSpeedField.setText(String.valueOf(speed));
         rememberTexture(textureId);
         refreshViewer();
         updateFaceInfo();
@@ -611,9 +674,85 @@ public final class ModelEditorDialog extends JDialog {
         if (!ensureFaceSelected()) {
             return;
         }
-        model.removeFaceTexture(selectedFace);
+        for (int face : selectedFacesForEditing()) {
+            model.removeFaceTexture(face);
+        }
         refreshViewer();
         updateFaceInfo();
+    }
+
+    private void activateTexture(int textureId) {
+        if (textureId < 0) {
+            return;
+        }
+        activeTextureId = textureId;
+        activeTextureCoordinate = -1;
+        if (model == null) {
+            activeTextureDirection = TextureLoader.previewScrollUValue(textureId);
+            activeTextureSpeed = TextureLoader.previewScrollVValue(textureId);
+            textureIdField.setText(String.valueOf(textureId));
+            textureDirectionField.setText(String.valueOf(activeTextureDirection));
+            textureSpeedField.setText(String.valueOf(activeTextureSpeed));
+            return;
+        }
+        int[] metadata = findTextureDirectionAndSpeed(textureId);
+        if (selectedFace >= 0 && selectedFace < model.getTriangleCount()) {
+            int currentTexture = model.getTriangleTextures() != null && selectedFace < model.getTriangleTextures().length
+                    ? model.getTriangleTextures()[selectedFace] : -1;
+            // Replacing an already-textured face keeps its mapping settings.
+            // For an untextured face, use the selected texture's known settings
+            // instead of replacing them with the face's zero defaults.
+            if (currentTexture >= 0) {
+                activeTextureCoordinate = textureCoordinateForFace(selectedFace);
+                metadata = faceTextureDirectionAndSpeed(selectedFace);
+            }
+        }
+        if (activeTextureCoordinate < 0 && model.getTriangleTextures() != null) {
+            for (int face = 0; face < model.getTriangleTextures().length; face++) {
+                if (model.getTriangleTextures()[face] == textureId) {
+                    activeTextureCoordinate = textureCoordinateForFace(face);
+                    if (activeTextureCoordinate >= 0) {
+                        break;
+                    }
+                }
+            }
+        }
+        activeTextureDirection = metadata[0];
+        activeTextureSpeed = metadata[1];
+        textureIdField.setText(String.valueOf(textureId));
+        textureDirectionField.setText(String.valueOf(activeTextureDirection));
+        textureSpeedField.setText(String.valueOf(activeTextureSpeed));
+        updateTextureMappingInfo(textureId);
+        rememberTexture(textureId);
+    }
+
+    private int textureCoordinateForFace(int face) {
+        int[] coordinates = model == null ? null : model.getTextureCoordinates();
+        if (coordinates == null || face < 0 || face >= coordinates.length) {
+            return -1;
+        }
+        int coordinate = coordinates[face] & 0xFF;
+        int[] vertices = model.getTextureTriangleVertex1();
+        return vertices != null && coordinate < vertices.length ? coordinate : -1;
+    }
+
+    private int[] findTextureDirectionAndSpeed(int textureId) {
+        if (model != null && model.getTriangleTextures() != null) {
+            for (int face = 0; face < model.getTriangleTextures().length; face++) {
+                if (model.getTriangleTextures()[face] == textureId) {
+                    return faceTextureDirectionAndSpeed(face);
+                }
+            }
+        }
+        return new int[]{TextureLoader.previewScrollUValue(textureId), TextureLoader.previewScrollVValue(textureId)};
+    }
+
+    private int[] faceTextureDirectionAndSpeed(int face) {
+        int texture = model.getTriangleTextures() != null && face < model.getTriangleTextures().length
+                ? model.getTriangleTextures()[face] : -1;
+        return texture >= 0
+                ? new int[]{TextureLoader.previewScrollUValue(texture), TextureLoader.previewScrollVValue(texture)}
+                : new int[]{0, 0};
     }
 
     private void rememberTexture(int textureId) {
@@ -640,7 +779,10 @@ public final class ModelEditorDialog extends JDialog {
             } else {
                 swatch.setText(String.valueOf(textureId));
             }
-            swatch.addActionListener(e -> textureIdField.setText(String.valueOf(textureId)));
+            swatch.addActionListener(e -> activateTexture(textureId));
+            swatch.setBorder(BorderFactory.createLineBorder(
+                    textureId == activeTextureId ? new Color(70, 150, 255) : new Color(90, 90, 90),
+                    textureId == activeTextureId ? 2 : 1));
             recentTexturePanel.add(swatch);
         }
         recentTexturePanel.revalidate();
@@ -723,7 +865,7 @@ public final class ModelEditorDialog extends JDialog {
 
     private void refreshViewer() {
         viewer.setModel(buildRenderModel());
-        viewer.setSelectedFace(selectedFace);
+        viewer.setSelectedFaces(selectedFaces);
     }
 
     private RenderModel buildRenderModel() {
@@ -750,40 +892,153 @@ public final class ModelEditorDialog extends JDialog {
         if (selectedFace < 0 || selectedFace >= model.getTriangleCount()) {
             faceInfo.setText("Model " + modelId + " | No face selected");
             refreshColorPreview();
+            updateTextureMappingInfo(activeTextureId);
             return;
         }
         int colour = model.getTriangleColors()[selectedFace] & 0xFFFF;
         int texture = model.getTriangleTextures() != null && selectedFace < model.getTriangleTextures().length
                 ? model.getTriangleTextures()[selectedFace] : -1;
-        int direction = 0;
-        int speed = 0;
-        if (model.getTextureCoordinates() != null && selectedFace < model.getTextureCoordinates().length) {
-            int coordinate = model.getTextureCoordinates()[selectedFace];
-            if (coordinate >= 0) {
-                if (model.getTextureDirection() != null && coordinate < model.getTextureDirection().length) {
-                    direction = model.getTextureDirection()[coordinate];
-                }
-                if (model.getTextureSpeed() != null && coordinate < model.getTextureSpeed().length) {
-                    speed = model.getTextureSpeed()[coordinate];
-                }
-            }
-        }
-        faceInfo.setText("Model " + modelId + " | Face " + selectedFace + " | color=" + colour + " | texture=" + texture
+        int[] faceTextureMetadata = texture >= 0
+                ? faceTextureDirectionAndSpeed(selectedFace)
+                : new int[]{0, 0};
+        int direction = faceTextureMetadata[0];
+        int speed = faceTextureMetadata[1];
+        String selectionLabel = selectedFaces.size() > 1
+                ? "Faces " + selectedFaces.size() + " (active " + selectedFace + ")"
+                : "Face " + selectedFace;
+        faceInfo.setText("Model " + modelId + " | " + selectionLabel + " | color=" + colour + " | texture=" + texture
                 + " | dir=" + direction + " | speed=" + speed);
         colorField.setText(String.valueOf(colour));
         if (texture >= 0) {
             textureIdField.setText(String.valueOf(texture));
         }
-        textureDirectionField.setText(String.valueOf(direction));
-        textureSpeedField.setText(String.valueOf(speed));
+        if (activeTextureId < 0) {
+            textureDirectionField.setText(String.valueOf(direction));
+            textureSpeedField.setText(String.valueOf(speed));
+        } else {
+            textureDirectionField.setText(String.valueOf(activeTextureDirection));
+            textureSpeedField.setText(String.valueOf(activeTextureSpeed));
+        }
         refreshColorPreview();
+        updateTextureMappingInfo(activeTextureId >= 0 ? activeTextureId : texture);
+    }
+
+    private void updateTextureMappingInfo(int textureId) {
+        if (model == null || textureId < 0) {
+            textureMappingInfo.setText("Select a texture or textured face to inspect its client mapping.");
+            return;
+        }
+        int coordinate = activeTextureCoordinate;
+        int mappingFace = selectedFace >= 0 && selectedFace < model.getTriangleCount()
+                && model.getTriangleTextures() != null
+                && selectedFace < model.getTriangleTextures().length
+                && model.getTriangleTextures()[selectedFace] == textureId
+                ? selectedFace : -1;
+        if (coordinate < 0 && mappingFace >= 0) {
+            coordinate = textureCoordinateForFace(mappingFace);
+        }
+        if (coordinate < 0 && model.getTriangleTextures() != null) {
+            for (int face = 0; face < model.getTriangleTextures().length; face++) {
+                if (model.getTriangleTextures()[face] == textureId) {
+                    coordinate = textureCoordinateForFace(face);
+                    if (coordinate >= 0) {
+                        mappingFace = face;
+                        break;
+                    }
+                }
+            }
+        }
+        StringBuilder text = new StringBuilder();
+        text.append("Texture ").append(textureId)
+                .append(" | faces painted: ").append(countFacesUsingTexture(textureId)).append('\n');
+        if (coordinate < 0) {
+            text.append("Mapping: new mapping will be created on paint\n");
+            text.append("Material scroll: U=").append(TextureLoader.previewScrollUValue(textureId))
+                    .append(" V=").append(TextureLoader.previewScrollVValue(textureId));
+            textureMappingInfo.setText(text.toString());
+            return;
+        }
+        int type = value(model.getTextureRenderTypes(), coordinate, 0) & 0xFF;
+        text.append("Texture triangle: ").append(coordinate)
+                .append(" | render type: ").append(textureRenderTypeName(type)).append('\n');
+        if (type == 0) {
+            text.append("Projection vertices: ")
+                    .append(vertexLabel(model.getTextureTriangleVertex1(), coordinate)).append(" / ")
+                    .append(vertexLabel(model.getTextureTriangleVertex2(), coordinate)).append(" / ")
+                    .append(vertexLabel(model.getTextureTriangleVertex3(), coordinate)).append('\n');
+        } else {
+            text.append("Projection parameters: ")
+                    .append(value(model.getTextureTriangleVertex1(), coordinate, 0)).append(" / ")
+                    .append(value(model.getTextureTriangleVertex2(), coordinate, 0)).append(" / ")
+                    .append(value(model.getTextureTriangleVertex3(), coordinate, 0)).append('\n');
+        }
+        if (type != 0) {
+            text.append("Scale X/Y/Z: ")
+                    .append(value(model.getTextureScaleX(), coordinate, 0)).append(" / ")
+                    .append(value(model.getTextureScaleY(), coordinate, 0)).append(" / ")
+                    .append(value(model.getTextureScaleZ(), coordinate, 0)).append('\n');
+            text.append("Rotation: ").append(value(model.getTextureRotation(), coordinate, 0))
+                    .append(" | Projection direction: ").append(value(model.getTextureDirection(), coordinate, 0))
+                    .append(" | Projection speed parameter: ").append(value(model.getTextureSpeed(), coordinate, 0)).append('\n');
+            text.append("Translation U/V: ").append(value(model.getTextureTransU(), coordinate, 0))
+                    .append(" / ").append(value(model.getTextureTransV(), coordinate, 0)).append('\n');
+        } else {
+            text.append("Projection: shared simple 3D texture triangle\n");
+        }
+        text.append("Material scroll: U=").append(TextureLoader.previewScrollUValue(textureId))
+                .append(" V=").append(TextureLoader.previewScrollVValue(textureId));
+        textureMappingInfo.setText(text.toString());
+    }
+
+    private int countFacesUsingTexture(int textureId) {
+        int count = 0;
+        if (model.getTriangleTextures() != null) {
+            for (int value : model.getTriangleTextures()) {
+                if (value == textureId) count++;
+            }
+        }
+        return count;
+    }
+
+    private String vertexLabel(int[] vertices, int coordinate) {
+        if (vertices == null || coordinate < 0 || coordinate >= vertices.length) return "-";
+        int vertex = vertices[coordinate];
+        if (vertex < 0 || vertex >= model.getVertexCount()) return "#" + vertex;
+        return "#" + vertex + "(" + model.getVertexPositionsX()[vertex] + ","
+                + model.getVertexPositionsY()[vertex] + "," + model.getVertexPositionsZ()[vertex] + ")";
+    }
+
+    private String textureRenderTypeName(int type) {
+        switch (type) {
+            case 1: return "cylindrical";
+            case 2: return "cube";
+            case 3: return "spherical";
+            default: return "simple";
+        }
+    }
+
+    private int value(int[] values, int index, int fallback) {
+        return values == null || index < 0 || index >= values.length ? fallback : values[index];
+    }
+
+    private Set<Integer> selectedFacesForEditing() {
+        LinkedHashSet<Integer> faces = new LinkedHashSet<>();
+        for (int face : selectedFaces) {
+            if (face >= 0 && face < model.getTriangleCount()) {
+                faces.add(face);
+            }
+        }
+        if (faces.isEmpty() && selectedFace >= 0 && selectedFace < model.getTriangleCount()) {
+            faces.add(selectedFace);
+        }
+        return faces;
     }
 
     private boolean ensureFaceSelected() {
-        if (selectedFace >= 0 && selectedFace < model.getTriangleCount()) {
+        if (!selectedFacesForEditing().isEmpty()) {
             return true;
         }
-        JOptionPane.showMessageDialog(this, "Select a face first.");
+        JOptionPane.showMessageDialog(this, "Select one or more faces first.");
         return false;
     }
 

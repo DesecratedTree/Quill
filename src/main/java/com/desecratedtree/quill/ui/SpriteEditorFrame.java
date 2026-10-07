@@ -45,8 +45,9 @@ public final class SpriteEditorFrame extends JFrame {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(1100, 760);
         setLocationRelativeTo(null);
-        JPanel content = new JPanel(new BorderLayout(8, 8));
-        content.setBorder(new EmptyBorder(8, 8, 8, 8));
+        JPanel content = new JPanel(new BorderLayout(12, 12));
+        content.setBorder(new EmptyBorder(16, 16, 16, 16));
+        content.setBackground(UiStyles.SURFACE_SUBTLE);
         setContentPane(content);
         groupList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         groupList.addListSelectionListener(e -> {
@@ -90,11 +91,13 @@ public final class SpriteEditorFrame extends JFrame {
         });
         JScrollPane groupScrollPane = new JScrollPane(groupList);
         groupScrollPane.setPreferredSize(new Dimension(180, 0));
+        UiStyles.styleScrollPane(groupScrollPane);
         content.add(groupScrollPane, BorderLayout.WEST);
         JPanel center = new JPanel(new BorderLayout(0, 8));
         center.setBorder(BorderFactory.createTitledBorder("Sprite Group"));
         center.add(groupMetaLabel, BorderLayout.NORTH);
         center.add(new JScrollPane(spriteGrid), BorderLayout.CENTER);
+        UiStyles.styleCard(center);
         content.add(center, BorderLayout.CENTER);
         spriteGrid.addMouseListener(new MouseAdapter() {
 
@@ -350,7 +353,7 @@ public final class SpriteEditorFrame extends JFrame {
         replacement.deltaHeight = existing.deltaHeight;
         currentArchive.sprites.set(spriteIndex, replacement);
         selectedSpriteIndex = spriteIndex;
-        saveCurrentGroup(images);
+        saveCurrentGroup(finalImages);
     }
 
     private void removeSelectedSprite() {
@@ -393,12 +396,15 @@ public final class SpriteEditorFrame extends JFrame {
         SpriteArchive rebuilt = new SpriteArchive();
         for (int i = 0; i < archive.sprites.size(); i++) {
             IndexedSprite original = archive.sprites.get(i);
-            IndexedSprite copy = SpriteArchiveCodec.fromBufferedImage(images.get(i));
+            BufferedImage image = i < images.size() ? images.get(i) : original.toBufferedImage();
+            IndexedSprite copy = SpriteArchiveCodec.fromBufferedImage(image);
             copy.offsetX = original.offsetX;
             copy.offsetY = original.offsetY;
             copy.deltaWidth = original.deltaWidth;
             copy.deltaHeight = original.deltaHeight;
             rebuilt.sprites.add(copy);
+            rebuilt.canvasWidth = Math.max(rebuilt.canvasWidth, copy.offsetX + copy.width + copy.deltaWidth);
+            rebuilt.canvasHeight = Math.max(rebuilt.canvasHeight, copy.offsetY + copy.height + copy.deltaHeight);
         }
         rebuilt.canvasWidth = archive.canvasWidth;
         rebuilt.canvasHeight = archive.canvasHeight;

@@ -150,6 +150,9 @@ public final class SpriteArchiveCodec {
     }
 
     public static IndexedSprite fromBufferedImage(BufferedImage image) {
+        if (image == null) {
+            throw new IllegalArgumentException("Sprite image cannot be null.");
+        }
         IndexedSprite sprite = new IndexedSprite();
         sprite.width = image.getWidth();
         sprite.height = image.getHeight();
@@ -157,8 +160,37 @@ public final class SpriteArchiveCodec {
         sprite.offsetY = 0;
         sprite.deltaWidth = 0;
         sprite.deltaHeight = 0;
-        sprite.palette = new int[]{0};
-        sprite.raster = new byte[sprite.width * sprite.height];
+        LinkedHashMap<Integer, Integer> paletteMap = new LinkedHashMap<>();
+        paletteMap.put(0, 0);
+        int[] pixels = new int[sprite.width * sprite.height];
+        image.getRGB(0, 0, sprite.width, sprite.height, pixels, 0, sprite.width);
+        sprite.raster = new byte[pixels.length];
+        byte[] alpha = new byte[pixels.length];
+        boolean hasAlpha = false;
+        for (int i = 0; i < pixels.length; i++) {
+            Color color = new Color(pixels[i], true);
+            int alphaValue = color.getAlpha();
+            int rgb = alphaValue == 0 ? 0 : color.getRGB() & 0xFFFFFF;
+            if (alphaValue != 0 && rgb == 0) {
+                rgb = 1;
+            }
+            Integer paletteIndex = paletteMap.get(rgb);
+            if (paletteIndex == null) {
+                if (paletteMap.size() >= 256) {
+                    throw new IllegalArgumentException("Sprite uses more than 255 indexed colors.");
+                }
+                paletteIndex = paletteMap.size();
+                paletteMap.put(rgb, paletteIndex);
+            }
+            sprite.raster[i] = (byte) (paletteIndex & 0xFF);
+            alpha[i] = (byte) alphaValue;
+            hasAlpha |= alphaValue != 255;
+        }
+        sprite.palette = new int[paletteMap.size()];
+        for (Map.Entry<Integer, Integer> entry : paletteMap.entrySet()) {
+            sprite.palette[entry.getValue()] = entry.getKey();
+        }
+        sprite.alpha = hasAlpha ? alpha : null;
         return sprite;
     }
 
@@ -173,6 +205,9 @@ public final class SpriteArchiveCodec {
             Color color = new Color(rgb[i], true);
             int alphaValue = color.getAlpha();
             int rgb24 = alphaValue == 0 ? 0 : (new Color(color.getRed(), color.getGreen(), color.getBlue()).getRGB() & 0xFFFFFF);
+            if (alphaValue != 0 && rgb24 == 0) {
+                rgb24 = 1;
+            }
             Integer paletteIndex = paletteMap.get(rgb24);
             if (paletteIndex == null) {
                 paletteIndex = paletteMap.size();
@@ -211,6 +246,9 @@ public final class SpriteArchiveCodec {
                 Color color = new Color(argb, true);
                 int rgb24 = color.getAlpha() == 0 ? 0
                         : (new Color(color.getRed(), color.getGreen(), color.getBlue()).getRGB() & 0xFFFFFF);
+                if (color.getAlpha() != 0 && rgb24 == 0) {
+                    rgb24 = 1;
+                }
                 if (!paletteMap.containsKey(rgb24)) {
                     paletteMap.put(rgb24, paletteMap.size());
                     if (paletteMap.size() > 256) {

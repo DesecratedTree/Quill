@@ -32,6 +32,14 @@ public final class SoftwareModelRenderer {
 
     private static final double NEAR_PLANE = 50.0;
 
+    private static final double LIGHT_AMBIENT = 0.78;
+
+    private static final double LIGHT_STRENGTH = 0.18;
+
+    private static final double LIGHT_MINIMUM = 0.68;
+
+    private static final double LIGHT_MAXIMUM = 1.0;
+
     private static final double LIGHT_X;
 
     private static final double LIGHT_Y;
@@ -115,7 +123,8 @@ public final class SoftwareModelRenderer {
         double[] vBright = new double[model.vertexCount];
         for (int i = 0; i < model.vertexCount; i++) {
             double[] n = transform.applyRotation(new double[]{vnx[i], vny[i], vnz[i]});
-            vBright[i] = clamp(0.55 + n[0] * LIGHT_X + n[1] * LIGHT_Y + n[2] * LIGHT_Z, 0.28, 1.0);
+            vBright[i] = clamp(LIGHT_AMBIENT + (n[0] * LIGHT_X + n[1] * LIGHT_Y + n[2] * LIGHT_Z) * LIGHT_STRENGTH,
+                    LIGHT_MINIMUM, LIGHT_MAXIMUM);
         }
         return renderFaces(
                 model,
@@ -174,7 +183,8 @@ public final class SoftwareModelRenderer {
         for (int i = 0; i < model.vertexCount; i++) {
             double[] n = rotateY(vnx[i], vny[i], vnz[i], yawRadians);
             n = rotateX(n[0], n[1], n[2], pitchRadians);
-            vBright[i] = clamp(0.55 + n[0] * LIGHT_X + n[1] * LIGHT_Y + n[2] * LIGHT_Z, 0.28, 1.0);
+            vBright[i] = clamp(LIGHT_AMBIENT + (n[0] * LIGHT_X + n[1] * LIGHT_Y + n[2] * LIGHT_Z) * LIGHT_STRENGTH,
+                    LIGHT_MINIMUM, LIGHT_MAXIMUM);
         }
         return renderFaces(
                 model,
@@ -258,16 +268,16 @@ public final class SoftwareModelRenderer {
                 continue;
             }
             if (texturedFill == null) {
-                int rawRgb = rawFaceColor(model.faceColors, face);
-                color1 = (alpha << 24) | (rawRgb & 0xFFFFFF);
+                int shadedRgb = shadedFaceColor(model.faceColors, face, faceBrightness);
+                color1 = (alpha << 24) | (shadedRgb & 0xFFFFFF);
             } else {
                 color1 = 0;
             }
             if (alpha < 255) {
                 int color;
                 if (texturedFill == null) {
-                    int rawRgb = rawFaceColor(model.faceColors, face);
-                    color = (alpha << 24) | (rawRgb & 0xFFFFFF);
+                    int shadedRgb = shadedFaceColor(model.faceColors, face, faceBrightness);
+                    color = (alpha << 24) | (shadedRgb & 0xFFFFFF);
                 } else {
                     color = 0;
                 }
@@ -544,21 +554,9 @@ public final class SoftwareModelRenderer {
         return (px - x1) * (y2 - y1) - (py - y1) * (x2 - x1);
     }
 
-    private static int shadedFaceColor(short[] faceColors, int alpha, int index, double brightness) {
+    private static int shadedFaceColor(short[] faceColors, int index, double brightness) {
         int packed = faceColors != null && index < faceColors.length ? faceColors[index] & 0xFFFF : 0;
-        int rgb = CacheColor.toRgb(packed);
-        int baseRed = (rgb >> 16) & 0xFF;
-        int baseGreen = (rgb >> 8) & 0xFF;
-        int baseBlue = rgb & 0xFF;
-        int red = applyBrightness(baseRed, brightness);
-        int green = applyBrightness(baseGreen, brightness);
-        int blue = applyBrightness(baseBlue, brightness);
-        return (alpha << 24) | (red << 16) | (green << 8) | blue;
-    }
-
-    private static int rawFaceColor(short[] faceColors, int index) {
-        int packed = faceColors != null && index < faceColors.length ? faceColors[index] & 0xFFFF : 0;
-        return CacheColor.toRgb(packed);
+        return CacheColor.shadedRgb(packed, brightness);
     }
 
     private static int faceAlpha(int[] faceAlphas, int index) {
@@ -580,12 +578,13 @@ public final class SoftwareModelRenderer {
         if (texture == null) {
             return null;
         }
-        if (!TextureLoader.hasOverrideTexture(textureId) && isFlatTexture(texture)) {
-            return null;
-        }
         TextureUvMapper.UvTriangle uv = TextureUvMapper.map(model, face);
+        int faceColor = model.faceColors != null && face < model.faceColors.length
+                ? model.faceColors[face] & 0xFFFF
+                : 0;
         return new TexturedFill(
                 texture,
+                isGrayscaleTexture(texture) ? faceColor : -1,
                 b1, b2, b3,
                 alpha,
                 uv.u1,
@@ -599,30 +598,6 @@ public final class SoftwareModelRenderer {
         );
     }
 
-    private static boolean isFlatTexture(BufferedImage image) {
-        int stepX = Math.max(1, image.getWidth() / 8);
-        int stepY = Math.max(1, image.getHeight() / 8);
-        int samples = 0;
-        int min = 255;
-        int max = 0;
-        for (int y = 0; y < image.getHeight(); y += stepY) {
-            for (int x = 0; x < image.getWidth(); x += stepX) {
-                int argb = image.getRGB(x, y);
-                int alpha = (argb >>> 24) & 0xFF;
-                if (alpha == 0) {
-                    continue;
-                }
-                int red = (argb >> 16) & 0xFF;
-                int green = (argb >> 8) & 0xFF;
-                int blue = argb & 0xFF;
-                int brightness = (red + green + blue) / 3;
-                min = Math.min(min, brightness);
-                max = Math.max(max, brightness);
-                samples++;
-            }
-        }
-        return samples > 0 && max - min <= 8;
-    }
 
     private static int sampleTexture(
             TexturedFill fill,
@@ -643,10 +618,35 @@ public final class SoftwareModelRenderer {
         int textureY = Math.min(fill.image.getHeight() - 1, Math.max(0, (int) Math.floor(v * fill.image.getHeight())));
         int texel = fill.image.getRGB(textureX, textureY);
         int alpha = ((texel >>> 24) & 0xFF) * fill.alpha / 255;
-        int red = applyBrightness((texel >> 16) & 0xFF, brightness);
-        int green = applyBrightness((texel >> 8) & 0xFF, brightness);
-        int blue = applyBrightness(texel & 0xFF, brightness);
+        int tinted = fill.tintPacked < 0 ? texel : CacheColor.tintRgb(fill.tintPacked, texel);
+        int red = applyBrightness((tinted >> 16) & 0xFF, brightness);
+        int green = applyBrightness((tinted >> 8) & 0xFF, brightness);
+        int blue = applyBrightness(tinted & 0xFF, brightness);
         return (alpha << 24) | (red << 16) | (green << 8) | blue;
+    }
+
+    private static boolean isGrayscaleTexture(BufferedImage image) {
+        int stepX = Math.max(1, image.getWidth() / 8);
+        int stepY = Math.max(1, image.getHeight() / 8);
+        long chromaTotal = 0;
+        int samples = 0;
+        int maximumChroma = 0;
+        for (int y = 0; y < image.getHeight(); y += stepY) {
+            for (int x = 0; x < image.getWidth(); x += stepX) {
+                int rgb = image.getRGB(x, y);
+                int red = (rgb >> 16) & 0xFF;
+                int green = (rgb >> 8) & 0xFF;
+                int blue = rgb & 0xFF;
+                int chroma = Math.max(red, Math.max(green, blue)) - Math.min(red, Math.min(green, blue));
+                chromaTotal += chroma;
+                maximumChroma = Math.max(maximumChroma, chroma);
+                samples++;
+            }
+        }
+        // Procedural cache masks can contain small channel differences from
+        // interpolation and palette quantization. A single >8 pixel should
+        // not prevent the face HSL from supplying the actual colour.
+        return samples > 0 && chromaTotal / (double) samples <= 10.0 && maximumChroma <= 24;
     }
 
     private static boolean isNonSolidFace(RenderModel model, int face) {
@@ -656,8 +656,7 @@ public final class SoftwareModelRenderer {
     }
 
     private static int applyBrightness(int channel, double brightness) {
-        double ambient = 24.0;
-        return (int) clamp(ambient + channel * brightness, 0.0, 255.0);
+        return (int) clamp(channel * brightness, 0.0, 255.0);
     }
 
     private static int blend(int source, int destination) {
@@ -974,6 +973,8 @@ public final class SoftwareModelRenderer {
 
         private final BufferedImage image;
 
+        private final int tintPacked;
+
         private final int alpha;
 
         private final float u1;
@@ -994,6 +995,7 @@ public final class SoftwareModelRenderer {
 
         private TexturedFill(
                 BufferedImage image,
+                int tintPacked,
                 double b1,
                 double b2,
                 double b3,
@@ -1008,6 +1010,7 @@ public final class SoftwareModelRenderer {
                 double scrollV
         ) {
             this.image = image;
+            this.tintPacked = tintPacked;
             this.alpha = alpha;
             this.u1 = u1;
             this.v1 = v1;

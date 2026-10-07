@@ -14,6 +14,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
@@ -26,6 +28,14 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
     private static final double NEAR_PLANE = 50.0;
 
     private static final double INTERNAL_RENDER_SCALE = 3.0;
+
+    private static final double LIGHT_AMBIENT = 0.78;
+
+    private static final double LIGHT_STRENGTH = 0.18;
+
+    private static final double LIGHT_MINIMUM = 0.68;
+
+    private static final double LIGHT_MAXIMUM = 1.0;
 
     private static final double LIGHT_X;
 
@@ -51,6 +61,14 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
 
     private final IntSupplier selectedFaceSupplier;
 
+    private final Supplier<Set<Integer>> selectedFacesSupplier;
+
+    private final Supplier<Point> boxSelectionStartSupplier;
+
+    private final Supplier<Point> boxSelectionCurrentSupplier;
+
+    private final BooleanSupplier boxSelectingSupplier;
+
     private final Map<Integer, Integer> textureHandles = new HashMap<>();
 
     private RenderModel cachedModel;
@@ -64,7 +82,11 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
             DoubleSupplier yawSupplier,
             DoubleSupplier zoomSupplier,
             IntSupplier hoveredFaceSupplier,
-            IntSupplier selectedFaceSupplier
+            IntSupplier selectedFaceSupplier,
+            Supplier<Set<Integer>> selectedFacesSupplier,
+            Supplier<Point> boxSelectionStartSupplier,
+            Supplier<Point> boxSelectionCurrentSupplier,
+            BooleanSupplier boxSelectingSupplier
     ) throws AWTException {
         super(glData());
         this.modelSupplier = modelSupplier;
@@ -73,6 +95,10 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
         this.zoomSupplier = zoomSupplier;
         this.hoveredFaceSupplier = hoveredFaceSupplier;
         this.selectedFaceSupplier = selectedFaceSupplier;
+        this.selectedFacesSupplier = selectedFacesSupplier;
+        this.boxSelectionStartSupplier = boxSelectionStartSupplier;
+        this.boxSelectionCurrentSupplier = boxSelectionCurrentSupplier;
+        this.boxSelectingSupplier = boxSelectingSupplier;
         setBackground(new Color(20, 23, 27));
     }
 
@@ -231,9 +257,65 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
         glDepthMask(true);
         drawHighlight(model, projection, farPlane, hoveredFaceSupplier.getAsInt(),
                 new Color(92, 214, 120, 86), new Color(104, 232, 136, 210), 1.8f);
-        drawHighlight(model, projection, farPlane, selectedFaceSupplier.getAsInt(),
-                new Color(128, 200, 255, hoveredFaceSupplier.getAsInt() == selectedFaceSupplier.getAsInt() ? 52 : 30),
-                new Color(145, 210, 255, 255), 2.8f);
+        Set<Integer> selectedFaces = selectedFacesSupplier.get();
+        if (selectedFaces == null || selectedFaces.isEmpty()) {
+            selectedFaces = java.util.Collections.singleton(selectedFaceSupplier.getAsInt());
+        }
+        for (int selectedFace : selectedFaces) {
+            drawHighlight(model, projection, farPlane, selectedFace,
+                    new Color(128, 200, 255, hoveredFaceSupplier.getAsInt() == selectedFace ? 52 : 30),
+                    new Color(145, 210, 255, 255), 2.8f);
+        }
+        drawSelectionBox();
+    }
+
+    private void drawSelectionBox() {
+        if (!boxSelectingSupplier.getAsBoolean()) {
+            return;
+        }
+        Point start = boxSelectionStartSupplier.get();
+        Point current = boxSelectionCurrentSupplier.get();
+        if (start == null || current == null) {
+            return;
+        }
+        int width = Math.max(1, getFramebufferWidth() > 0 ? getFramebufferWidth() : getWidth());
+        int height = Math.max(1, getFramebufferHeight() > 0 ? getFramebufferHeight() : getHeight());
+        double scaleX = width / (double) Math.max(1, getWidth());
+        double scaleY = height / (double) Math.max(1, getHeight());
+        double x = Math.min(start.x, current.x) * scaleX;
+        double y = Math.min(start.y, current.y) * scaleY;
+        double boxWidth = Math.abs(current.x - start.x) * scaleX;
+        double boxHeight = Math.abs(current.y - start.y) * scaleY;
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, width, height, 0, -1, 1);
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glColor4f(100f / 255f, 180f / 255f, 255f / 255f, 45f / 255f);
+        glBegin(GL_QUADS);
+        glVertex2d(x, y);
+        glVertex2d(x + boxWidth, y);
+        glVertex2d(x + boxWidth, y + boxHeight);
+        glVertex2d(x, y + boxHeight);
+        glEnd();
+        glColor4f(145f / 255f, 210f / 255f, 255f / 255f, 230f / 255f);
+        glLineWidth(1.5f);
+        glBegin(GL_LINE_LOOP);
+        glVertex2d(x, y);
+        glVertex2d(x + boxWidth, y);
+        glVertex2d(x + boxWidth, y + boxHeight);
+        glVertex2d(x, y + boxHeight);
+        glEnd();
+        glEnable(GL_DEPTH_TEST);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
     }
 
     private PendingFace buildFace(FaceInfo face, Projection projection, double farPlane, MeshCache mesh) {
@@ -253,7 +335,10 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
         double b2 = vertexBrightness(mesh.vertexNormalX[b], mesh.vertexNormalY[b], mesh.vertexNormalZ[b], projection);
         double b3 = vertexBrightness(mesh.vertexNormalX[c], mesh.vertexNormalY[c], mesh.vertexNormalZ[c], projection);
         double faceBrightness = (b1 + b2 + b3) / 3.0;
-        TexturedFace texturedFace = texturedFace(face.textureInfo, b1, b2, b3, face.alpha);
+        int faceColor = mesh.model.faceColors != null && face.index < mesh.model.faceColors.length
+                ? mesh.model.faceColors[face.index] & 0xFFFF
+                : 0;
+        TexturedFace texturedFace = texturedFace(face.textureInfo, faceColor, b1, b2, b3, face.alpha);
         int argb1 = shadedFaceColor(mesh.model.faceColors, face.alpha, face.index, b1);
         int argb2 = shadedFaceColor(mesh.model.faceColors, face.alpha, face.index, b2);
         int argb3 = shadedFaceColor(mesh.model.faceColors, face.alpha, face.index, b3);
@@ -271,7 +356,8 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
         double rz = -nx * projection.yawSin + nz * projection.yawCos;
         double ry = ny * projection.pitchCos - rz * projection.pitchSin;
         double rd = ny * projection.pitchSin + rz * projection.pitchCos;
-        return clamp(0.55 + rx * LIGHT_X + ry * LIGHT_Y + rd * LIGHT_Z, 0.28, 1.0);
+        return clamp(LIGHT_AMBIENT + (rx * LIGHT_X + ry * LIGHT_Y + rd * LIGHT_Z) * LIGHT_STRENGTH,
+                LIGHT_MINIMUM, LIGHT_MAXIMUM);
     }
 
     private void drawFace(PendingFace face, boolean opaquePass) {
@@ -318,11 +404,14 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
         float b1 = (float) face.texturedFace.brightness1;
         float b2 = (float) face.texturedFace.brightness2;
         float b3 = (float) face.texturedFace.brightness3;
+        float tintR = ((face.texturedFace.tintRgb >> 16) & 0xFF) / 255f;
+        float tintG = ((face.texturedFace.tintRgb >> 8) & 0xFF) / 255f;
+        float tintB = (face.texturedFace.tintRgb & 0xFF) / 255f;
         float alpha = face.texturedFace.alpha / 255f;
         glBegin(GL_TRIANGLES);
-        glColor4f(b1, b1, b1, alpha); glTexCoord2d(face.texturedFace.u1 + face.texturedFace.scrollU, face.texturedFace.v1 + face.texturedFace.scrollV); glVertex3d(face.x1, -face.y1, face.z1);
-        glColor4f(b2, b2, b2, alpha); glTexCoord2d(face.texturedFace.u2 + face.texturedFace.scrollU, face.texturedFace.v2 + face.texturedFace.scrollV); glVertex3d(face.x2, -face.y2, face.z2);
-        glColor4f(b3, b3, b3, alpha); glTexCoord2d(face.texturedFace.u3 + face.texturedFace.scrollU, face.texturedFace.v3 + face.texturedFace.scrollV); glVertex3d(face.x3, -face.y3, face.z3);
+        glColor4f(b1 * tintR, b1 * tintG, b1 * tintB, alpha); glTexCoord2d(face.texturedFace.u1 + face.texturedFace.scrollU, face.texturedFace.v1 + face.texturedFace.scrollV); glVertex3d(face.x1, -face.y1, face.z1);
+        glColor4f(b2 * tintR, b2 * tintG, b2 * tintB, alpha); glTexCoord2d(face.texturedFace.u2 + face.texturedFace.scrollU, face.texturedFace.v2 + face.texturedFace.scrollV); glVertex3d(face.x2, -face.y2, face.z2);
+        glColor4f(b3 * tintR, b3 * tintG, b3 * tintB, alpha); glTexCoord2d(face.texturedFace.u3 + face.texturedFace.scrollU, face.texturedFace.v3 + face.texturedFace.scrollV); glVertex3d(face.x3, -face.y3, face.z3);
         glEnd();
     }
 
@@ -495,6 +584,30 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
         return texture;
     }
 
+    private static boolean isGrayscaleTexture(BufferedImage image) {
+        int stepX = Math.max(1, image.getWidth() / 8);
+        int stepY = Math.max(1, image.getHeight() / 8);
+        long chromaTotal = 0;
+        int samples = 0;
+        int maximumChroma = 0;
+        for (int y = 0; y < image.getHeight(); y += stepY) {
+            for (int x = 0; x < image.getWidth(); x += stepX) {
+                int rgb = image.getRGB(x, y);
+                int red = (rgb >> 16) & 0xFF;
+                int green = (rgb >> 8) & 0xFF;
+                int blue = rgb & 0xFF;
+                int chroma = Math.max(red, Math.max(green, blue)) - Math.min(red, Math.min(green, blue));
+                chromaTotal += chroma;
+                maximumChroma = Math.max(maximumChroma, chroma);
+                samples++;
+            }
+        }
+        // Match the software renderer: small palette/interpolation channel
+        // differences do not make a grayscale brightness mask a real-color
+        // texture.
+        return samples > 0 && chromaTotal / (double) samples <= 10.0 && maximumChroma <= 24;
+    }
+
     private static boolean isNonSolidFace(RenderModel model, int face) {
         return model.faceRenderTypes != null
                 && face < model.faceRenderTypes.length
@@ -503,19 +616,7 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
 
     private static int shadedFaceColor(short[] faceColors, int alpha, int index, double brightness) {
         int packed = faceColors != null && index < faceColors.length ? faceColors[index] & 0xFFFF : 0;
-        int rgb = CacheColor.toRgb(packed);
-        int baseRed = (rgb >> 16) & 0xFF;
-        int baseGreen = (rgb >> 8) & 0xFF;
-        int baseBlue = rgb & 0xFF;
-        int red = applyBrightness(baseRed, brightness);
-        int green = applyBrightness(baseGreen, brightness);
-        int blue = applyBrightness(baseBlue, brightness);
-        return (alpha << 24) | (red << 16) | (green << 8) | blue;
-    }
-
-    private static int applyBrightness(int channel, double brightness) {
-        double ambient = 24.0;
-        return (int) clamp(ambient + channel * brightness, 0.0, 255.0);
+        return (alpha << 24) | CacheColor.shadedRgb(packed, brightness);
     }
 
     private static int faceAlpha(int[] faceAlphas, int index) {
@@ -533,36 +634,15 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
         return (px - x1) * (y2 - y1) - (py - y1) * (x2 - x1);
     }
 
-    private static boolean isFlatTexture(BufferedImage image) {
-        int stepX = Math.max(1, image.getWidth() / 8);
-        int stepY = Math.max(1, image.getHeight() / 8);
-        int samples = 0;
-        int min = 255;
-        int max = 0;
-        for (int y = 0; y < image.getHeight(); y += stepY) {
-            for (int x = 0; x < image.getWidth(); x += stepX) {
-                int argb = image.getRGB(x, y);
-                int alpha = (argb >>> 24) & 0xFF;
-                if (alpha == 0) {
-                    continue;
-                }
-                int red = (argb >> 16) & 0xFF;
-                int green = (argb >> 8) & 0xFF;
-                int blue = argb & 0xFF;
-                int brightness = (red + green + blue) / 3;
-                min = Math.min(min, brightness);
-                max = Math.max(max, brightness);
-                samples++;
-            }
-        }
-        return samples > 0 && max - min <= 8;
-    }
 
-    private static TexturedFace texturedFace(TextureInfo info, double brightness1, double brightness2, double brightness3, int alpha) {
+    private static TexturedFace texturedFace(TextureInfo info, int faceColor, double brightness1, double brightness2, double brightness3, int alpha) {
         if (info == null) {
             return null;
         }
-        return new TexturedFace(info.textureId, info.image, brightness1, brightness2, brightness3, alpha,
+        int tintRgb = isGrayscaleTexture(info.image)
+                ? CacheColor.toRgb(faceColor)
+                : 0xFFFFFF;
+        return new TexturedFace(info.textureId, info.image, tintRgb, brightness1, brightness2, brightness3, alpha,
                 info.u1, info.v1, info.u2, info.v2, info.u3, info.v3,
                 TextureLoader.scrollU(info.textureId), TextureLoader.scrollV(info.textureId));
     }
@@ -577,9 +657,6 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
         }
         BufferedImage texture = TextureLoader.previewTexture(textureId);
         if (texture == null) {
-            return null;
-        }
-        if (!TextureLoader.hasOverrideTexture(textureId) && isFlatTexture(texture)) {
             return null;
         }
         TextureUvMapper.UvTriangle uv = TextureUvMapper.map(model, face);
@@ -819,6 +896,8 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
 
         private final BufferedImage image;
 
+        private final int tintRgb;
+
         private final double brightness1;
 
         private final double brightness2;
@@ -843,11 +922,12 @@ final class LwjglModelViewerCanvas extends AWTGLCanvas {
 
         private final double scrollV;
 
-        private TexturedFace(int textureId, BufferedImage image, double brightness1, double brightness2, double brightness3, int alpha,
+        private TexturedFace(int textureId, BufferedImage image, int tintRgb, double brightness1, double brightness2, double brightness3, int alpha,
                              float u1, float v1, float u2, float v2, float u3, float v3,
                              double scrollU, double scrollV) {
             this.textureId = textureId;
             this.image = image;
+            this.tintRgb = tintRgb;
             this.brightness1 = brightness1;
             this.brightness2 = brightness2;
             this.brightness3 = brightness3;

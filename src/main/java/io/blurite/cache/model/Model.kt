@@ -161,6 +161,31 @@ data class Model(
         }
     }
 
+    /**
+     * Assigns a face to an existing texture triangle. RuneScape models store
+     * the texture image on the face and the UV projection separately: several
+     * faces may point at the same texture triangle.
+     */
+    fun setFaceTextureAtCoordinate(
+        face: Int,
+        textureId: Int,
+        coordinate: Int,
+    ) {
+        if (face !in 0 until triangleCount) return
+        if (coordinate !in 0 until textureTriangleCount) {
+            setFaceTexture(face, textureId)
+            return
+        }
+        if (triangleTextures == null) {
+            triangleTextures = IntArray(triangleCount) { -1 }
+        }
+        if (textureCoordinates == null) {
+            textureCoordinates = IntArray(triangleCount) { -1 }
+        }
+        triangleTextures!![face] = textureId
+        textureCoordinates!![face] = coordinate
+    }
+
     fun setFaceTextureDirectionAndSpeed(
         face: Int,
         direction: Int,
@@ -176,9 +201,6 @@ data class Model(
         textureScaleX!![coordinate] = if (textureScaleX!![coordinate] == 0) 128 else textureScaleX!![coordinate]
         textureScaleY!![coordinate] = if (textureScaleY!![coordinate] == 0) 128 else textureScaleY!![coordinate]
         textureScaleZ!![coordinate] = if (textureScaleZ!![coordinate] == 0) 128 else textureScaleZ!![coordinate]
-        textureTriangleVertex1!![coordinate] = triangleVertex1!![face]
-        textureTriangleVertex2!![coordinate] = triangleVertex2!![face]
-        textureTriangleVertex3!![coordinate] = triangleVertex3!![face]
     }
 
     fun replaceEmitters(emitters: Array<EmissiveTriangle>?) {

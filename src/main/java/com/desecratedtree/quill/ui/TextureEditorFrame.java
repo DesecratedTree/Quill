@@ -33,8 +33,9 @@ public final class TextureEditorFrame extends JFrame {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(900, 700);
         setLocationRelativeTo(null);
-        JPanel content = new JPanel(new BorderLayout(8, 8));
-        content.setBorder(new EmptyBorder(8, 8, 8, 8));
+        JPanel content = new JPanel(new BorderLayout(12, 12));
+        content.setBorder(new EmptyBorder(16, 16, 16, 16));
+        content.setBackground(UiStyles.SURFACE_SUBTLE);
         setContentPane(content);
         textureList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         textureList.setCellRenderer(new TextureListRenderer());
@@ -57,12 +58,16 @@ public final class TextureEditorFrame extends JFrame {
                 maybeShowTextureMenu(e);
             }
         });
-        content.add(new JScrollPane(textureList), BorderLayout.WEST);
+        JScrollPane textureScroll = new JScrollPane(textureList);
+        UiStyles.styleScrollPane(textureScroll);
+        textureScroll.setPreferredSize(new Dimension(220, 0));
+        content.add(textureScroll, BorderLayout.WEST);
         JPanel previewPanel = new JPanel(new BorderLayout(0, 8));
         previewPanel.setBorder(BorderFactory.createTitledBorder("Preview"));
         JScrollPane previewScroll = new JScrollPane(previewLabel);
         previewPanel.add(previewScroll, BorderLayout.CENTER);
         previewPanel.add(metaLabel, BorderLayout.SOUTH);
+        UiStyles.styleCard(previewPanel);
         content.add(previewPanel, BorderLayout.CENTER);
         MouseAdapter previewMenuListener = new MouseAdapter() {
 
@@ -118,7 +123,9 @@ public final class TextureEditorFrame extends JFrame {
         }
         previewLabel.setText(null);
         previewLabel.setIcon(new ImageIcon(scaleImageNearest(image, 512, 512)));
-        metaLabel.setText("Texture " + textureId + " | " + image.getWidth() + "x" + image.getHeight());
+        metaLabel.setText("Texture " + textureId + " | " + image.getWidth() + "x" + image.getHeight()
+                + " | direction=" + TextureLoader.previewScrollUValue(textureId)
+                + " | speed=" + TextureLoader.previewScrollVValue(textureId));
     }
 
     private void addTexture() {

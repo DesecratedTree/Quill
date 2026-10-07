@@ -1,7 +1,6 @@
 package com.desecratedtree.quill.render;
 
-import com.desecratedtree.quill.texture.MaterialDefinition;
-import com.desecratedtree.quill.texture.MaterialLoader;
+import com.desecratedtree.quill.texture.TextureLoader;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -10,7 +9,9 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
@@ -31,6 +32,16 @@ public class ModelViewerPanel extends JPanel {
 
     private Point lastDragPoint;
 
+    private Point boxSelectionStart;
+
+    private Point boxSelectionCurrent;
+
+    private boolean boxSelecting;
+
+    private boolean boxSelectionCompleted;
+
+    private boolean preserveMultiSelectionForPainting;
+
     private final Timer animationTimer;
 
     private IntConsumer faceClickListener;
@@ -39,7 +50,11 @@ public class ModelViewerPanel extends JPanel {
 
     private BiConsumer<Integer, Integer> groupClickListener;
 
+    private Runnable selectionChangedListener;
+
     private int selectedFace = -1;
+
+    private final LinkedHashSet<Integer> selectedFaces = new LinkedHashSet<>();
 
     private int selectedGroup = -1;
 
@@ -93,11 +108,25 @@ public class ModelViewerPanel extends JPanel {
 
             public void mousePressed(MouseEvent e) {
                 lastDragPoint = e.getPoint();
+                if (SwingUtilities.isLeftMouseButton(e) && e.isControlDown() && model != null) {
+                    boxSelectionStart = e.getPoint();
+                    boxSelectionCurrent = e.getPoint();
+                    boxSelecting = false;
+                }
             }
 
             @Override
 
             public void mouseDragged(MouseEvent e) {
+                if (boxSelectionStart != null && (e.isControlDown() || boxSelecting)) {
+                    boxSelectionCurrent = e.getPoint();
+                    if (Math.abs(e.getX() - boxSelectionStart.x) >= 6
+                            || Math.abs(e.getY() - boxSelectionStart.y) >= 6) {
+                        boxSelecting = true;
+                    }
+                    repaintViewer();
+                    return;
+                }
                 if (lastDragPoint == null) {
                     lastDragPoint = e.getPoint();
                     return;
@@ -113,18 +142,43 @@ public class ModelViewerPanel extends JPanel {
             @Override
 
             public void mouseReleased(MouseEvent e) {
+                if (boxSelecting && boxSelectionStart != null && boxSelectionCurrent != null) {
+                    selectFacesInBox(boxSelectionStart, boxSelectionCurrent);
+                    boxSelectionCompleted = true;
+                }
+                boxSelectionStart = null;
+                boxSelectionCurrent = null;
+                boxSelecting = false;
                 lastDragPoint = null;
+                repaintViewer();
             }
 
             @Override
 
             public void mouseClicked(MouseEvent e) {
+                if (boxSelectionCompleted) {
+                    boxSelectionCompleted = false;
+                    return;
+                }
                 if (!SwingUtilities.isLeftMouseButton(e) || model == null) {
                     return;
                 }
                 int face = pickFace(e.getPoint());
                 if (face < 0) {
                     return;
+                }
+                boolean additiveSelection = e.isControlDown() || e.isShiftDown();
+                boolean preserveSelection = preserveMultiSelectionForPainting && selectedFaces.contains(face);
+                if (!additiveSelection && !preserveSelection) {
+                    selectedFaces.clear();
+                }
+                if (additiveSelection && selectedFaces.contains(face) && selectedFaces.size() > 1) {
+                    selectedFaces.remove(face);
+                } else {
+                    selectedFaces.add(face);
+                }
+                if (!preserveSelection && !additiveSelection) {
+                    preserveMultiSelectionForPainting = false;
                 }
                 selectedFace = face;
                 hoveredFace = face;
@@ -190,6 +244,8 @@ public class ModelViewerPanel extends JPanel {
     public void setModel(RenderModel model) {
         this.modelSupplier = null;
         this.model = model;
+        this.selectedFaces.clear();
+        this.selectedFace = -1;
         invalidateProjectionCache();
         updateAnimationTimerState();
         repaintViewer();
@@ -223,9 +279,30 @@ public class ModelViewerPanel extends JPanel {
         this.groupClickListener = groupClickListener;
     }
 
+    public void setSelectionChangedListener(Runnable selectionChangedListener) {
+        this.selectionChangedListener = selectionChangedListener;
+    }
+
     public void setSelectedFace(int selectedFace) {
+        this.selectedFaces.clear();
+        if (selectedFace >= 0) {
+            this.selectedFaces.add(selectedFace);
+        }
         this.selectedFace = selectedFace;
         repaintViewer();
+    }
+
+    public void setSelectedFaces(Set<Integer> selectedFaces) {
+        this.selectedFaces.clear();
+        if (selectedFaces != null) {
+            this.selectedFaces.addAll(selectedFaces);
+        }
+        this.selectedFace = this.selectedFaces.isEmpty() ? -1 : this.selectedFaces.iterator().next();
+        repaintViewer();
+    }
+
+    public Set<Integer> getSelectedFaces() {
+        return new LinkedHashSet<>(selectedFaces);
     }
 
     public void setSelectedGroup(int selectedGroup) {
@@ -258,15 +335,63 @@ public class ModelViewerPanel extends JPanel {
         Graphics2D g2 = (Graphics2D) graphics.create();
         g2.drawImage(image, 0, 0, null);
         Projection projection = projectedModel();
+        paintSelectionBox(g2);
         if (model != null && model.faceGroupMajority != null) {
             paintGroupOverlay(g2, projection, hoveredGroup, new Color(92, 214, 120, 56), new Color(104, 232, 136, 180), 1.4f);
             paintGroupOverlay(g2, projection, selectedGroup, new Color(128, 200, 255, 40), new Color(145, 210, 255, 220), 2.6f);
         } else {
             paintFaceOverlay(g2, projection, hoveredFace, new Color(92, 214, 120, 86), new Color(104, 232, 136, 210), 1.8f);
-            paintFaceOverlay(g2, projection, selectedFace, new Color(128, 200, 255, hoveredFace == selectedFace ? 52 : 30),
-                    new Color(145, 210, 255, 255), 2.8f);
+            for (int face : selectedFaces) {
+                paintFaceOverlay(g2, projection, face, new Color(128, 200, 255, hoveredFace == face ? 52 : 30),
+                        new Color(145, 210, 255, 255), 2.8f);
+            }
         }
         g2.dispose();
+    }
+
+    private void paintSelectionBox(Graphics2D g2) {
+        if (!boxSelecting || boxSelectionStart == null || boxSelectionCurrent == null) {
+            return;
+        }
+        int x = Math.min(boxSelectionStart.x, boxSelectionCurrent.x);
+        int y = Math.min(boxSelectionStart.y, boxSelectionCurrent.y);
+        int width = Math.abs(boxSelectionCurrent.x - boxSelectionStart.x);
+        int height = Math.abs(boxSelectionCurrent.y - boxSelectionStart.y);
+        g2.setColor(new Color(100, 180, 255, 45));
+        g2.fillRect(x, y, width, height);
+        g2.setColor(new Color(145, 210, 255, 230));
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawRect(x, y, width, height);
+    }
+
+    private void selectFacesInBox(Point start, Point end) {
+        Projection projection = projectedModel();
+        if (projection == null || model == null) {
+            return;
+        }
+        int minX = (int) Math.round(Math.min(start.x, end.x) * PROJECTION_SCALE);
+        int maxX = (int) Math.round(Math.max(start.x, end.x) * PROJECTION_SCALE);
+        int minY = (int) Math.round(Math.min(start.y, end.y) * PROJECTION_SCALE);
+        int maxY = (int) Math.round(Math.max(start.y, end.y) * PROJECTION_SCALE);
+        for (int face = 0; face < model.faceCount; face++) {
+            int a = model.faceA[face];
+            int b = model.faceB[face];
+            int c = model.faceC[face];
+            if (projection.viewZ[a] <= 50.0 || projection.viewZ[b] <= 50.0 || projection.viewZ[c] <= 50.0) {
+                continue;
+            }
+            double centerX = (projection.screenX[a] + projection.screenX[b] + projection.screenX[c]) / 3.0;
+            double centerY = (projection.screenY[a] + projection.screenY[b] + projection.screenY[c]) / 3.0;
+            if (centerX >= minX && centerX <= maxX && centerY >= minY && centerY <= maxY) {
+                selectedFaces.add(face);
+            }
+        }
+        selectedFace = selectedFaces.isEmpty() ? selectedFace : selectedFaces.iterator().next();
+        preserveMultiSelectionForPainting = !selectedFaces.isEmpty();
+        if (selectionChangedListener != null) {
+            selectionChangedListener.run();
+        }
+        repaintViewer();
     }
 
     private void paintGroupOverlay(Graphics2D g2, Projection projection, int group, Color fill, Color stroke, float strokeWidth) {
@@ -331,7 +456,9 @@ public class ModelViewerPanel extends JPanel {
         if (model != null) {
             lines.add(String.format("Drag rotate | Wheel zoom | Zoom %.2fx", zoom));
             if (selectedGroup < 0 && selectedFace < 0) {
-                lines.add(model.faceGroupMajority != null ? "Click to select group" : "Click to select face");
+                lines.add(model.faceGroupMajority != null
+                        ? "Click to select group | Ctrl/Shift-click to multi-select | Ctrl-drag box"
+                        : "Click to select face | Ctrl/Shift-click to multi-select | Ctrl-drag box");
             }
         }
         return lines;
@@ -380,7 +507,11 @@ public class ModelViewerPanel extends JPanel {
                         () -> yawDegrees,
                         () -> zoom,
                         () -> hoveredFace,
-                        () -> selectedFace
+                        () -> selectedFace,
+                        this::getSelectedFaces,
+                        () -> boxSelectionStart,
+                        () -> boxSelectionCurrent,
+                        () -> boxSelecting
                 );
             } catch (Throwable ignored) {
             }
@@ -533,19 +664,7 @@ public class ModelViewerPanel extends JPanel {
     }
 
     private static boolean modelUsesAnimatedTextures(RenderModel model) {
-        if (model == null || model.faceTextures == null) {
-            return false;
-        }
-        for (int textureId : model.faceTextures) {
-            if (textureId < 0) {
-                continue;
-            }
-            MaterialDefinition material = MaterialLoader.get(textureId);
-            if (material != null && (material.field198 != 0 || material.field211 != 0)) {
-                return true;
-            }
-        }
-        return false;
+        return TextureLoader.hasAnimatedTextures(model);
     }
 
     private static double edge(double x1, double y1, double x2, double y2, double px, double py) {

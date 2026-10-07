@@ -17,8 +17,8 @@ public final class CacheColor {
     }
 
     public static int toRgb(int packed) {
-        double hue = ((packed >> 10) & 0x3F) / 64.0;
-        double saturation = ((packed >> 7) & 0x07) / 8.0;
+        double hue = ((packed >> 10) & 0x3F) / 64.0 + 1.0 / 128.0;
+        double saturation = ((packed >> 7) & 0x07) / 8.0 + 1.0 / 16.0;
         double lightness = (packed & 0x7F) / 128.0;
         double r;
         double g;
@@ -28,13 +28,39 @@ public final class CacheColor {
             g = lightness;
             b = lightness;
         } else {
-            double q = lightness < 0.5 ? lightness * (1.0 + saturation) : lightness + saturation - lightness * saturation;
+            double q = lightness < 0.5
+                    ? lightness * (1.0 + saturation)
+                    : lightness + saturation - lightness * saturation;
             double p = 2.0 * lightness - q;
             r = hueToRgb(p, q, hue + 1.0 / 3.0);
             g = hueToRgb(p, q, hue);
             b = hueToRgb(p, q, hue - 1.0 / 3.0);
         }
-        return ((int) (r * 255.0) << 16) | ((int) (g * 255.0) << 8) | (int) (b * 255.0);
+        return (channel(r) << 16) | (channel(g) << 8) | channel(b);
+    }
+
+    /**
+     * Applies the 634 client's model-face lightness adjustment.  The client
+     * shades the packed HSL lightness component before looking up the RGB
+     * palette; multiplying RGB channels directly makes saturated faces look
+     * washed out and introduces a grey ambient colour.
+     */
+    public static int shadedRgb(int packed, double brightness) {
+        double clampedBrightness = Math.max(0.0, Math.min(1.0, brightness));
+        int lightness = (packed & 0x7F) * (int) Math.round(clampedBrightness * 128.0) >> 7;
+        lightness = clamp(lightness, 2, 126);
+        return toRgb((packed & 0xFF80) | lightness);
+    }
+
+    /** Applies a packed face colour while treating a grayscale texture as a brightness mask. */
+    public static int tintRgb(int packed, int rgb) {
+        int textureBrightness = Math.max((rgb >> 16) & 0xFF,
+                Math.max((rgb >> 8) & 0xFF, rgb & 0xFF));
+        int base = toRgb(packed);
+        int red = ((base >> 16) & 0xFF) * textureBrightness / 255;
+        int green = ((base >> 8) & 0xFF) * textureBrightness / 255;
+        int blue = (base & 0xFF) * textureBrightness / 255;
+        return (red << 16) | (green << 8) | blue;
     }
 
     public static int fromColor(Color color) {
@@ -54,6 +80,10 @@ public final class CacheColor {
         if (t < 1.0 / 2.0) return q;
         if (t < 2.0 / 3.0) return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
         return p;
+    }
+
+    private static int channel(double value) {
+        return clamp((int) Math.round(value * 255.0), 0, 255);
     }
 
     private static int clamp(int value, int min, int max) {

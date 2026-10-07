@@ -12,6 +12,7 @@ import com.desecratedtree.quill.render.ModelFileFormat;
 import com.desecratedtree.quill.render.ModelViewerPanel;
 import com.desecratedtree.quill.render.RenderModel;
 import com.desecratedtree.quill.render.SoftwareModelRenderer;
+import com.desecratedtree.quill.texture.TextureLoader;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -87,6 +88,10 @@ public class ItemEditorPanel extends JPanel {
 
     private int currentStackIndex = -1;
 
+    private ItemDefinitions displayedPreviewItem;
+
+    private final Timer previewAnimationTimer = new Timer(80, e -> refreshDisplayedPreview());
+
     private final List<JTextField> stackAmountFields = new ArrayList<>();
 
     private final List<JTextField> stackModelFields = new ArrayList<>();
@@ -121,6 +126,13 @@ public class ItemEditorPanel extends JPanel {
         add(createFooter(), BorderLayout.SOUTH);
         saveButton.addActionListener(e -> save());
         installPreviewListeners();
+    }
+
+    @Override
+    public void removeNotify() {
+        previewAnimationTimer.stop();
+        displayedPreviewItem = null;
+        super.removeNotify();
     }
 
     public void setSaveListener(IntConsumer saveListener) {
@@ -811,9 +823,28 @@ public class ItemEditorPanel extends JPanel {
     }
 
     private void updateInventorySprite(ItemDefinitions item) {
+        displayedPreviewItem = item;
         if (item == null || item.modelId < 0) {
+            previewAnimationTimer.stop();
             spriteLabel.setIcon(null);
             spriteLabel.setText("No item selected");
+            return;
+        }
+        refreshDisplayedPreview();
+        RenderModel previewModel = ModelDecoderAdapter.loadItemModel(item);
+        if (TextureLoader.hasAnimatedTextures(previewModel)) {
+            if (!previewAnimationTimer.isRunning()) {
+                previewAnimationTimer.start();
+            }
+        } else {
+            previewAnimationTimer.stop();
+        }
+    }
+
+    private void refreshDisplayedPreview() {
+        ItemDefinitions item = displayedPreviewItem;
+        if (item == null || item.modelId < 0) {
+            previewAnimationTimer.stop();
             return;
         }
         spriteLabel.setText(null);

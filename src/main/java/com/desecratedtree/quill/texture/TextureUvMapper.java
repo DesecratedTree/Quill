@@ -446,7 +446,11 @@ public final class TextureUvMapper {
     }
 
     private static float scaleZ(RenderModel model, int coordinate) {
-        return sanitizeScale(value(model.textureSpeed, coordinate, 128));
+        // textureSpeed is a projection parameter for complex model textures,
+        // but it is not the Z extent of the mapping triangle. The client keeps
+        // that extent in textureScaleZ; mixing the two collapses/stretchs
+        // cylindrical and spherical mappings into visibly incorrect patterns.
+        return sanitizeScale(value(model.textureScaleZ, coordinate, 128));
     }
 
     private static float sanitizeScale(int value) {

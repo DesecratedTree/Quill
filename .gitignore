@@ -45,3 +45,4 @@ bin/
 /.idea
 /gradle
 /.kotlin
+/data/cache

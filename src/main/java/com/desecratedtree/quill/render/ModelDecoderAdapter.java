@@ -564,9 +564,9 @@ public final class ModelDecoderAdapter {
                 for (int face = 0; face < recolored.length; face++) {
                     if ((recolored[face] & 0xFFFF) == from) {
                         recolored[face] = (short) to;
-                        if (retextured != null && face < retextured.length) {
-                            retextured[face] = -1;
-                        }
+                        // The 634-era client (Class124.method1098) recolours
+                        // only the face colour array and never clears the
+                        // material reference, so keep `retextured` intact here.
                     }
                 }
             }

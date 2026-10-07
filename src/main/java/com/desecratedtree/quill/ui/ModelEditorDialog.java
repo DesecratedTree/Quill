@@ -115,8 +115,7 @@ public final class ModelEditorDialog extends JDialog {
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(8, 8));
-        ((JComponent) getContentPane()).setBorder(new EmptyBorder(14, 14, 14, 14));
-        getContentPane().setBackground(UiStyles.SURFACE_SUBTLE);
+        ((JComponent) getContentPane()).setBorder(new EmptyBorder(8, 8, 8, 8));
 
         viewer.setPreferredSize(new Dimension(680, 520));
         viewer.setFaceInteractionListener((face, clickCount) -> {
@@ -167,7 +166,6 @@ public final class ModelEditorDialog extends JDialog {
     private JPanel buildModelListPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
         panel.setPreferredSize(new Dimension(180, 520));
-        UiStyles.styleCard(panel);
         panel.setBorder(BorderFactory.createTitledBorder("Models"));
 
         modelList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

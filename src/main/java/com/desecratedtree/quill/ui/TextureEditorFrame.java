@@ -33,9 +33,8 @@ public final class TextureEditorFrame extends JFrame {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(900, 700);
         setLocationRelativeTo(null);
-        JPanel content = new JPanel(new BorderLayout(12, 12));
-        content.setBorder(new EmptyBorder(16, 16, 16, 16));
-        content.setBackground(UiStyles.SURFACE_SUBTLE);
+        JPanel content = new JPanel(new BorderLayout(8, 8));
+        content.setBorder(new EmptyBorder(8, 8, 8, 8));
         setContentPane(content);
         textureList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         textureList.setCellRenderer(new TextureListRenderer());
@@ -58,16 +57,12 @@ public final class TextureEditorFrame extends JFrame {
                 maybeShowTextureMenu(e);
             }
         });
-        JScrollPane textureScroll = new JScrollPane(textureList);
-        UiStyles.styleScrollPane(textureScroll);
-        textureScroll.setPreferredSize(new Dimension(220, 0));
-        content.add(textureScroll, BorderLayout.WEST);
+        content.add(new JScrollPane(textureList), BorderLayout.WEST);
         JPanel previewPanel = new JPanel(new BorderLayout(0, 8));
         previewPanel.setBorder(BorderFactory.createTitledBorder("Preview"));
         JScrollPane previewScroll = new JScrollPane(previewLabel);
         previewPanel.add(previewScroll, BorderLayout.CENTER);
         previewPanel.add(metaLabel, BorderLayout.SOUTH);
-        UiStyles.styleCard(previewPanel);
         content.add(previewPanel, BorderLayout.CENTER);
         MouseAdapter previewMenuListener = new MouseAdapter() {
 

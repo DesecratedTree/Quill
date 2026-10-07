@@ -45,9 +45,8 @@ public final class SpriteEditorFrame extends JFrame {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(1100, 760);
         setLocationRelativeTo(null);
-        JPanel content = new JPanel(new BorderLayout(12, 12));
-        content.setBorder(new EmptyBorder(16, 16, 16, 16));
-        content.setBackground(UiStyles.SURFACE_SUBTLE);
+        JPanel content = new JPanel(new BorderLayout(8, 8));
+        content.setBorder(new EmptyBorder(8, 8, 8, 8));
         setContentPane(content);
         groupList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         groupList.addListSelectionListener(e -> {
@@ -91,13 +90,11 @@ public final class SpriteEditorFrame extends JFrame {
         });
         JScrollPane groupScrollPane = new JScrollPane(groupList);
         groupScrollPane.setPreferredSize(new Dimension(180, 0));
-        UiStyles.styleScrollPane(groupScrollPane);
         content.add(groupScrollPane, BorderLayout.WEST);
         JPanel center = new JPanel(new BorderLayout(0, 8));
         center.setBorder(BorderFactory.createTitledBorder("Sprite Group"));
         center.add(groupMetaLabel, BorderLayout.NORTH);
         center.add(new JScrollPane(spriteGrid), BorderLayout.CENTER);
-        UiStyles.styleCard(center);
         content.add(center, BorderLayout.CENTER);
         spriteGrid.addMouseListener(new MouseAdapter() {
 

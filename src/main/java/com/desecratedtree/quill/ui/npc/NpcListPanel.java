@@ -3,7 +3,6 @@ package com.desecratedtree.quill.ui.npc;
 import com.desecratedtree.quill.cache.CacheManager;
 import com.desecratedtree.quill.defs.NpcDefinitions;
 import com.desecratedtree.quill.ui.component.SimpleDocumentListener;
-import com.desecratedtree.quill.ui.UiStyles;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -36,13 +35,12 @@ public class NpcListPanel extends JPanel {
     private IntConsumer deleteAction;
 
     public NpcListPanel() {
-        setLayout(new BorderLayout(0, 8));
+        setLayout(new BorderLayout());
         setPreferredSize(new Dimension(250, 600));
-        setBackground(UiStyles.SURFACE_RAISED);
         reloadData();
         add(searchField, BorderLayout.NORTH);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        UiStyles.styleTable(table);
+        table.setRowHeight(20);
         table.setShowGrid(false);
         table.getTableHeader().setReorderingAllowed(false);
         DefaultTableCellRenderer leftAlign = new DefaultTableCellRenderer();
@@ -70,9 +68,7 @@ public class NpcListPanel extends JPanel {
                 showContextMenu(e);
             }
         });
-        JScrollPane tableScroll = new JScrollPane(table);
-        UiStyles.styleScrollPane(tableScroll);
-        add(tableScroll, BorderLayout.CENTER);
+        add(new JScrollPane(table), BorderLayout.CENTER);
         searchField.getDocument().addDocumentListener(SimpleDocumentListener.onChange(() -> filter(searchField.getText())));
     }
 

@@ -3,7 +3,6 @@ package com.desecratedtree.quill.ui.object;
 import com.desecratedtree.quill.cache.CacheManager;
 import com.desecratedtree.quill.defs.ObjectDefinitions;
 import com.desecratedtree.quill.ui.component.SimpleDocumentListener;
-import com.desecratedtree.quill.ui.UiStyles;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -36,13 +35,12 @@ public final class ObjectListPanel extends JPanel {
     private IntConsumer deleteAction;
 
     public ObjectListPanel() {
-        setLayout(new BorderLayout(0, 8));
+        setLayout(new BorderLayout());
         setPreferredSize(new Dimension(250, 600));
-        setBackground(UiStyles.SURFACE_RAISED);
         reloadData();
         add(searchField, BorderLayout.NORTH);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        UiStyles.styleTable(table);
+        table.setRowHeight(20);
         table.setShowGrid(false);
         table.getTableHeader().setReorderingAllowed(false);
         DefaultTableCellRenderer leftAlign = new DefaultTableCellRenderer();
@@ -70,9 +68,7 @@ public final class ObjectListPanel extends JPanel {
                 showContextMenu(e);
             }
         });
-        JScrollPane tableScroll = new JScrollPane(table);
-        UiStyles.styleScrollPane(tableScroll);
-        add(tableScroll, BorderLayout.CENTER);
+        add(new JScrollPane(table), BorderLayout.CENTER);
         searchField.getDocument().addDocumentListener(SimpleDocumentListener.onChange(() -> filter(searchField.getText())));
     }
 
